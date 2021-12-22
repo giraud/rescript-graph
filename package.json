@@ -15,9 +15,10 @@
     "author": "",
     "license": "MIT",
     "dependencies": {
+        "@rescript/react": "^0.10.3",
+        "dagre": "^0.8.5",
         "react": "^17.0.2",
         "react-dom": "^17.0.2",
-        "fbjs": "^3.0.2",
         "react-reconciler": "^0.26.2",
         "rescript": "*"
     },

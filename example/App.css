@@ -1,42 +1,80 @@
-.App {
-  text-align: center;
+:root {
+    --color-canvas: #22272e;
+    --color-menu: #2d333b;
+    --color-border: #444c56;
+    --color-text: #cdd9e5;
+    --color-hover: #539bf5;
+    --color-selected: hsl(6, 100%, 64%); /*#ff55847;*/
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+*, *::before, *::after {
+    box-sizing: border-box;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+* {
+    margin: 0;
+    font-family: Tahoma, Verdana, Segoe, sans-serif;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+html, body {
+    height: 100%;
 }
 
-.App-link {
-  color: #61dafb;
+body {
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    background-color: var(--color-canvas);
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+#root, main {
+    height: 100%;
 }
 
-button {
-  font-size: calc(10px + 2vmin);
+main {
+    display: grid;
+    grid-template-rows: min-content 1fr;
+    grid-gap: 10px;
+}
+
+.toolbar {
+    display: flex;
+    gap: 10px;
+    padding: 10px;
+    background-color: var(--color-menu);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.graph {
+    padding: 10px;
+}
+
+div[data-node] {
+    border: 1px solid var(--color-border);
+    background-color: var(--color-canvas);
+    color: var(--color-text);
+    border-radius: 5px;
+    padding: 5px;
+    cursor: pointer;
+}
+
+div[data-node]:hover {
+    background-color: var(--color-hover);
+}
+
+div[data-node].start {
+    background-color: var(--color-selected);
+}
+
+div[data-node].end {
+    background-color: var(--color-selected);
+    filter: brightness(0.8)
+}
+
+text[data-edge="label"] {
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+text[data-edge="label"]:hover {
+    fill: var(--color-hover) !important;
 }
