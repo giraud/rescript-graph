@@ -1,6 +1,6 @@
-# Rescript-graph
+# Rescript-diagram
 
-just playing with react-reconciler and dagre...
+just playing with react-reconciler and an automatic diagram layout algo...
 
 ![screenshot](screenshot.png)
 

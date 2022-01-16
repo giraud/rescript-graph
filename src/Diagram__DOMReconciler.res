@@ -1,14 +1,14 @@
-module Dom = ReGraph__Dom
+module Dom = Diagram__Dom
 
 module Graph = {
   type t = {
-    engine: ReGraph__Dagre.t,
+    engine: Diagram__Dagre.t,
     item_count: ref<int>,
     item_processed: ref<int>,
   }
 
-  let setNode = graph => graph.engine->ReGraph__Dagre.setNode
-  let setEdge = graph => graph.engine->ReGraph__Dagre.setEdge
+  let setNode = graph => graph.engine->Diagram__Dagre.setNode
+  let setEdge = graph => graph.engine->Diagram__Dagre.setEdge
   let incrementCount = (graph, elementType) =>
     switch elementType {
     | "Node" => graph.item_count := graph.item_count.contents + 1
@@ -17,9 +17,9 @@ module Graph = {
     }
 
   let make = () => {
-    let engine = ReGraph__Dagre.make()
-    engine->ReGraph__Dagre.setGraph(Js.Obj.empty())
-    engine->ReGraph__Dagre.setDefaultEdgeLabel(_ => Js.Obj.empty())
+    let engine = Diagram__Dagre.make()
+    engine->Diagram__Dagre.setGraph(Js.Obj.empty())
+    engine->Diagram__Dagre.setDefaultEdgeLabel(_ => Js.Obj.empty())
     {
       engine: engine,
       item_count: ref(0),
@@ -98,7 +98,7 @@ let createArrowPoints = (x1, y1, x2, y2) => {
 }
 
 let buildPath = points =>
-  points->Belt.Array.reduce("M", (acc, p: ReGraph__Dagre.point) =>
+  points->Belt.Array.reduce("M", (acc, p: Diagram__Dagre.point) =>
     acc ++ Js.Float.toString(p.x) ++ "," ++ Js.Float.toString(p.y) ++ " "
   )
 
@@ -130,7 +130,7 @@ let createEdge = (id, label) => {
   element
 }
 
-let reconciler = ReGraph__ReactFiberReconciler.make({
+let reconciler = Diagram__ReactFiberReconciler.make({
   isPrimaryRenderer: false,
   supportsMutation: true,
   getPublicInstance: instance => instance,
@@ -148,9 +148,9 @@ let reconciler = ReGraph__ReactFiberReconciler.make({
       createEdgesContainer(Js.Float.toString(bbox.width), Js.Float.toString(bbox.height))
     | "Edge" =>
       let id =
-        props["from"]->Belt.Option.getWithDefault("from") ++
+        props["source"]->Belt.Option.getWithDefault("source") ++
         "-" ++
-        props["to"]->Belt.Option.getWithDefault("to")
+        props["target"]->Belt.Option.getWithDefault("target")
       createEdge(id, props["label"]->Belt.Option.getWithDefault(""))
     | _ => Dom.Document.createElement(elementType)
     }
@@ -205,20 +205,20 @@ let reconciler = ReGraph__ReactFiberReconciler.make({
         graph.item_processed := graph.item_processed.contents + 1
       | "Edge" =>
         graph->Graph.setEdge({
-          "v": props["from"]->Belt.Option.getWithDefault("unknown from"),
-          "w": props["to"]->Belt.Option.getWithDefault("unknown to"),
+          "v": props["source"]->Belt.Option.getWithDefault("unknown source"),
+          "w": props["target"]->Belt.Option.getWithDefault("unknown target"),
         })
         graph.item_processed := graph.item_processed.contents + 1
       | _ => ()
       }
 
       if graph.item_processed.contents == graph.item_count.contents {
-        ReGraph__Dagre.layout(graph.engine)
+        Diagram__Dagre.layout(graph.engine)
 
         graph.engine
-        ->ReGraph__Dagre.nodes
+        ->Diagram__Dagre.nodes
         ->Belt.Array.forEach(id =>
-          switch graph.engine->ReGraph__Dagre.node(id)->Js.toOption {
+          switch graph.engine->Diagram__Dagre.node(id)->Js.toOption {
           | None => Js.log("Can't find node info for " ++ id)
           | Some(nodeInfo) =>
             let hw = nodeInfo.width /. 2.
@@ -239,7 +239,7 @@ let reconciler = ReGraph__ReactFiberReconciler.make({
         )
 
         graph.engine
-        ->ReGraph__Dagre.edges
+        ->Diagram__Dagre.edges
         ->Belt.Array.forEach(edge => {
           let id = edge.v ++ "-" ++ edge.w
           Dom.Document.querySelectorAll("[data-edge='" ++ id ++ "']")
@@ -247,7 +247,7 @@ let reconciler = ReGraph__ReactFiberReconciler.make({
           ->Belt.Option.forEach(node =>
             switch node->Dom.children {
             | [path, text, start, arrow] =>
-              switch graph.engine->ReGraph__Dagre.edge(edge.v, edge.w)->Js.toOption {
+              switch graph.engine->Diagram__Dagre.edge(edge.v, edge.w)->Js.toOption {
               | None => Js.log("Can't find edge info for " ++ edge.v ++ " " ++ edge.w)
               | Some({points}) =>
                 let pointsCount = points->Belt.Array.length

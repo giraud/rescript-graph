@@ -1,5 +1,5 @@
 {
-    "name": "re-react-dagre",
+    "name": "rescript-diagram",
     "version": "0.0.1",
     "sources": ["src", "src/interop", "example"],
     "package-specs": {
