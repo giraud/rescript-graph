@@ -1,7 +1,7 @@
 :root {
     --color-canvas: #22272e;
     --color-menu: #2d333b;
-    --color-border: #444c56;
+    --color-border: #8d98a5;
     --color-text: #cdd9e5;
     --color-hover: #539bf5;
     --color-selected: hsl(6, 100%, 64%); /*#ff55847;*/
@@ -21,7 +21,7 @@ html, body {
 }
 
 body {
-    line-height: 1.5;
+    font-size: 14px;
     -webkit-font-smoothing: antialiased;
     background-color: var(--color-canvas);
 }
@@ -45,7 +45,7 @@ main {
 }
 
 .diagram {
-    padding: 10px;
+    cursor: move;
 }
 
 div[data-node] {
@@ -70,11 +70,23 @@ div[data-node].end {
     filter: brightness(0.8)
 }
 
-text[data-edge="label"] {
-    font-size: 0.8rem;
-    cursor: pointer;
+svg[data-edge] path {
+    stroke: var(--color-border);
+    fill: none;
 }
 
-text[data-edge="label"]:hover {
-    fill: var(--color-hover) !important;
+svg[data-edge] circle, svg[data-edge] polygon {
+    stroke: var(--color-border);
+    fill: var(--color-canvas)
+}
+
+div[data-edge-label] {
+    font-size: 0.75rem;
+    cursor: pointer;
+    stroke: none;
+    color: #cdd9e5;
+}
+
+div[data-edge-label]:hover {
+    color: var(--color-hover);
 }

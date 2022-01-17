@@ -44,8 +44,13 @@ module App = {
     }
 
     let selectNodes = (v, w) => {
-      setStart(_ => v)
-      setEnd(_ => w)
+      if start == v && end == w {
+        setStart(_ => "")
+        setEnd(_ => "")
+      } else {
+        setStart(_ => v)
+        setEnd(_ => w)
+      }
     }
 
     <main>
@@ -56,29 +61,31 @@ module App = {
         </button>
         <button onClick={reset}> {"Reset"->React.string} </button>
       </div>
-      <Diagram className="graph" width="100%" height="100%">
-        <Diagram.Edges>
-          {edges
-          ->Belt.Array.map(edge =>
-            <Diagram.Edge
-              key={edge[0] ++ "-" ++ edge[1]}
-              source={edge[0]}
-              target={edge[1]}
-              label={"edge"}
-              onClick={_ => selectNodes(edge[0], edge[1])}
-            />
-          )
-          ->React.array}
-        </Diagram.Edges>
+      <Diagram className="diagram" width="100%" height="100%">
         {nodes
         ->Belt.Array.map(nodeId =>
           <Diagram.Node
             key={nodeId}
-            id={nodeId}
+            nodeId={nodeId}
             className={start == nodeId ? "start" : end == nodeId ? "end" : ""}
             onClick={_ => selectNode(nodeId)}>
             {("Node " ++ nodeId)->React.string}
           </Diagram.Node>
+        )
+        ->React.array}
+        {edges
+        ->Belt.Array.map(edge =>
+          switch edge {
+          | [source, target] =>
+            <Diagram.Edge
+              key={source ++ "-" ++ target}
+              source
+              target
+              label="edge"
+              onClick={_ => selectNodes(source, target)}
+            />
+          | _ => React.null
+          }
         )
         ->React.array}
       </Diagram>

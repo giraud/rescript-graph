@@ -1,10 +1,13 @@
-type element = Dom.element
+module NodeType = {
+  let element = 1
+  let document = 9
+}
+
+type domRect = {width: float, height: float}
 
 module Document = {
   @val @scope("document")
   external getElementById: string => Js.nullable<Dom.element> = "getElementById"
-  @val @scope("document")
-  external querySelectorAll: string => array<Dom.element> = "querySelectorAll"
   @val @scope("document")
   external createElementNS: (string, string) => Dom.element = "createElementNS"
   @val @scope("document")
@@ -16,44 +19,33 @@ module Document = {
 }
 
 module Window = {
-  @val @scope("window")
-  external hasOwnProperty: string => bool = "hasOwnProperty"
+  @val @scope("window") external hasOwnProperty: string => bool = "hasOwnProperty"
 }
 
-module NodeType = {
-  let element = 1
-  let document = 9
-}
+@send external hasOwnProperty: (Dom.element, string) => bool = "hasOwnProperty"
+@send external appendChild: (Dom.element, Dom.element) => unit = "appendChild"
+@send external removeChild: (Dom.element, Dom.element) => unit = "removeChild"
+@send external setAttribute: (Dom.element, string, string) => unit = "setAttribute"
+@send external addEventListener: (Dom.element, string, 'a) => unit = "addEventListener"
+@send external getBoundingClientRect: Dom.element => domRect = "getBoundingClientRect"
+@send external closest: (Dom.element, string) => Js.nullable<Dom.element> = "closest"
+@send external querySelectorAll: (Dom.element, string) => array<Dom.element> = "querySelectorAll"
+@send external setPointerCapture: (Dom.element, string) => unit = "setPointerCapture"
+@send external releasePointerCapture: (Dom.element, string) => unit = "releasePointerCapture"
 
-type domRect = {width: float, height: float}
+@get external id: Dom.element => string = "id"
+@get external nodeType: Dom.element => int = "nodeType"
+@get external parentNode: Dom.element => Js.nullable<Dom.element> = "parentNode"
+@get external nextSibling: Dom.element => Js.nullable<Dom.element> = "nextSibling"
+@get external children: Dom.element => array<Dom.element> = "children"
 
-@send
-external hasOwnProperty: (Dom.element, string) => bool = "hasOwnProperty"
-@send
-external appendChild: (Dom.element, Dom.element) => unit = "appendChild"
-@send
-external removeChild: (Dom.element, Dom.element) => unit = "removeChild"
-@send
-external setAttribute: (Dom.element, string, string) => unit = "setAttribute"
-@send
-external addEventListener: (Dom.element, string, 'a) => unit = "addEventListener"
-@send
-external getBoundingClientRect: Dom.element => domRect = "getBoundingClientRect"
-@send
-external closest: (Dom.element, string) => Js.nullable<Dom.element> = "closest"
+@set external setId: (Dom.element, string) => unit = "id"
+@set external setTextContent: (Dom.element, string) => unit = "textContent"
+@set external setDocument: (Dom.element, Dom.element) => unit = "document"
 
-@get
-external id: Dom.element => string = "id"
-@get
-external nodeType: Dom.element => int = "nodeType"
-@get
-external parentNode: Dom.element => Js.nullable<Dom.element> = "parentNode"
-@get
-external children: Dom.element => array<Dom.element> = "children"
+@set @scope("style") external setStyleTransform: (Dom.element, string) => unit = "transform"
 
-@set
-external setId: (Dom.element, string) => unit = "id"
-@set
-external setTextContent: (Dom.element, string) => unit = "textContent"
-@set
-external setDocument: (Dom.element, Dom.element) => unit = "document"
+let setTranslate3d = (node, x, y) =>
+  node->setStyleTransform(
+    "translate3d(" ++ Js.Float.toString(x) ++ "px," ++ Js.Float.toString(y) ++ "px,0px)",
+  )
