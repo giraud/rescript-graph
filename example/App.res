@@ -80,6 +80,7 @@ module App = {
           {"Add edge"->React.string}
         </button>
         <button onClick={clear}> {"Clear"->React.string} </button>
+        <a href="https://github.com/giraud/rescript-diagram"> {"Github"->React.string} </a>
       </div>
       <Diagram className="diagram" width="100%" height="100%">
         {nodes->renderArray(nodeId =>
