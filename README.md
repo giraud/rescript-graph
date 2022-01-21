@@ -1,13 +1,13 @@
 # Rescript-diagram
 
-Very easy to use automatic diagram layout component in react.
+Easy to use automatic diagram layout component in react.
 
 ![screenshot](screenshot.png)
 
 ## Goals
 
-I'm just playing with react-reconciler and an automatic diagram layout algo 
-(currently using [dagre](https://github.com/dagrejs/dagre), it might change later).
+I'm just playing with react-reconciler (as a learning exercise) and an automatic diagram layout algo 
+(currently using [dagre](https://github.com/dagrejs/dagre), it might change later since it is deprecated).
 
 - minimal dependencies
 - nodes are plain html dom nodes (limit svg to lines)
