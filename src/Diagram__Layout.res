@@ -53,7 +53,17 @@ let processEdges = (layout, fn) =>
     let id = edge.v ++ "-" ++ edge.w
     switch layout.engine.contents->Diagram__Dagre.edge(edge.v, edge.w)->Js.toOption {
     | None => Js.log("Can't find edge info for " ++ edge.v ++ " " ++ edge.w)
-    | Some(edgeInfo) => fn(id, edgeInfo)
+    | Some(edgeInfo) =>
+      // fix pb in dagre where number can be NaN
+      fn(
+        id,
+        {
+          Diagram__Dagre.points: edgeInfo.points->Belt.Array.map(_p => {
+            Diagram__Dagre.x: %raw(`_p.x || 0`),
+            y: %raw(`_p.y || 0`),
+          }),
+        },
+      )
     }
   })
 

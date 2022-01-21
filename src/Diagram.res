@@ -3,7 +3,7 @@ module Node = {
   external make: (
     ~nodeId: string,
     ~className: string=?,
-    ~children: React.element=?,
+    ~children: React.element,
     ~onClick: ReactEvent.Mouse.t => unit=?,
   ) => React.element = "Node"
 }
@@ -54,7 +54,7 @@ let setTransform = (node, x, y, scale) =>
   )
 
 @react.component
-let make = (~width, ~height, ~className, ~minScale=0.1, ~maxScale=1.5, ~children) => {
+let make = (~width, ~height, ~className=?, ~minScale=0.1, ~maxScale=1.5, ~children) => {
   let diagramNode = React.useRef(None)
   let canvasNode = React.useRef(None)
   let slidingEnabled = React.useRef(false)
@@ -126,7 +126,7 @@ let make = (~width, ~height, ~className, ~minScale=0.1, ~maxScale=1.5, ~children
 
   <WithPointerEvents onPointerDown=beginSliding onPointerUp=stopSliding onPointerMove=slide>
     <div
-      className
+      ?className
       style={ReactDOM.Style.make(~width, ~height, ~position="relative", ~overflow="hidden", ())}
       onWheel={zoom}>
       <div

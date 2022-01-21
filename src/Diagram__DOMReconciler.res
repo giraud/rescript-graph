@@ -34,9 +34,10 @@ let createEdge = (id, label) => {
 
   let element = Dom.Document.createElementNS("http://www.w3.org/2000/svg", "svg")
   element->Dom.setAttribute("data-edge", id)
-  element->Dom.setAttribute("style", "position:absolute;pointer-events:none;") //background-color:#ffff0038",
+  element->Dom.setAttribute("style", "position:absolute;pointer-events:none;")
 
   let path = Dom.Document.createElementNS("http://www.w3.org/2000/svg", "path")
+  path->Dom.setAttribute("fill", "none")
 
   let start = Dom.Document.createElementNS("http://www.w3.org/2000/svg", "circle")
   start->Dom.setAttribute("r", "4")
