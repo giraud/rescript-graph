@@ -47,20 +47,14 @@ A more complex code sample that uses dynamic items:
 
 ```rescript
 
-let dotLike = "
-A
-B
-C
-A - B
-A - C
-"
+let sample = "1|2|3||1-2|1-3"
 
-let parseDot = instructions => {
+let parse = instructions => {
   instructions
-  ->Js.String2.split("\r\n")
+  ->Js.String2.split("|")
   ->Belt.Array.keep(line => line->Js.String2.length > 0)
   ->Belt.Array.reduce(([], []), ((nodes, edges) as acc, line) => {
-    switch line->Js.String2.split(" - ") {
+    switch line->Js.String2.split("-") {
     | [node] => (nodes->Belt.Array.concat([node]), edges)
     | [source, target] => (nodes, edges->Belt.Array.concat([(source, target)]))
     | _ => acc
@@ -73,7 +67,7 @@ let renderArray = (a, fn) => a->Belt.Array.map(fn)->React.array
 module App = {
   @react.component
   let make = () => {
-    let (nodes, edges) = parseDot(dotLike)
+    let (nodes, edges) = parse(sample)
 
     <Diagram className="diagram" width="300px" height="300px">
       {nodes->renderArray(nodeId =>

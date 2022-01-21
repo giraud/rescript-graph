@@ -3,14 +3,15 @@
 @val @scope("document")
 external getElementById: string => Js.nullable<Dom.element> = "getElementById"
 
-let layout1 = "A|B|C|A - B|A - C"
+let sample1 = "1|2|3||1-2|1-3"
+let sample2 = "1|2|3|4|5|6|7||1-2|1-3|1-5|2-3|2-7|4-1|6-6"
 
-let parseDot = instructions => {
+let parse = instructions => {
   instructions
   ->Js.String2.split("|")
   ->Belt.Array.keep(line => line->Js.String2.length > 0)
   ->Belt.Array.reduce(([], []), ((nodes, edges) as acc, line) => {
-    switch line->Js.String2.split(" - ") {
+    switch line->Js.String2.split("-") {
     | [node] => (nodes->Belt.Array.concat([node]), edges)
     | [source, target] => (nodes, edges->Belt.Array.concat([(source, target)]))
     | _ => acc
@@ -23,7 +24,7 @@ let renderArray = (a, fn) => a->Belt.Array.map(fn)->React.array
 module App = {
   @react.component
   let make = () => {
-    let (initialNodes, initialEdges) = parseDot(layout1)
+    let (initialNodes, initialEdges) = parse(sample2)
 
     let (id, setId) = React.useState(() => initialNodes->Belt.Array.length)
     let (start, setStart) = React.useState(() => "")
