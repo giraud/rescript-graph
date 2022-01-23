@@ -2,18 +2,15 @@ type t = {
   engine: ref<Diagram__Dagre.t>,
   count: ref<int>,
   processed: ref<int>,
-  scale: ref<float>,
 }
-
-let updateScale = (layout, scale) => layout.scale := scale
 
 let setNode = (layout, id, width, height) => {
   layout.engine.contents->Diagram__Dagre.setNode(
     id,
     {
       "label": "node_" ++ id,
-      "width": Js.Math.ceil_float(width /. layout.scale.contents),
-      "height": Js.Math.ceil_float(height /. layout.scale.contents),
+      "width": width, //(width /. layout.scale.contents),
+      "height": height, //(height /. layout.scale.contents),
     },
   )
   layout.processed := layout.processed.contents + 1
@@ -200,7 +197,7 @@ let reset = layout => {
   layout.engine := engine
 }
 
-let make = scale => {
+let make = () => {
   let engine = Diagram__Dagre.make()
   engine->Diagram__Dagre.setGraph(Js.Obj.empty())
   engine->Diagram__Dagre.setDefaultEdgeLabel(_ => Js.Obj.empty())
@@ -209,9 +206,8 @@ let make = scale => {
     engine: ref(engine),
     count: ref(0),
     processed: ref(0),
-    scale: ref(scale),
   }
 }
 
-@set external attachLayout: (Dom.element, t) => unit = "layout"
-@get external getLayout: Dom.element => t = "layout"
+@set external attach: (Dom.element, t) => unit = "layout"
+@get external get: Dom.element => t = "layout"

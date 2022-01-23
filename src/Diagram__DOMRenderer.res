@@ -1,17 +1,26 @@
-let root = ref(None)
-let isAsync = false
+module DataNodeReactRoot = {
+  @set external attach: (Dom.element, 'a) => unit = "_reactRootContainer"
+  @get external detach: Dom.element => Js.nullable<'a> = "_reactRootContainer"
+}
 
-let render = (whatToRender, renderDom /* , callback */) => {
-  let container = switch root.contents {
+let render = (element, container) => {
+  let root = switch container->DataNodeReactRoot.detach->Js.toOption {
   | Some(node) => node
   | None =>
-    Diagram__DOMReconciler.reconciler.createContainer(. renderDom, isAsync, false, Js.Nullable.null)
+    // Clear container
+    container
+    ->Diagram__Dom.children
+    ->Belt.Array.forEach(node => container->Diagram__Dom.removeChild(node))
+
+    let newRoot = Diagram__DOMReconciler.reconciler.createContainer(. container)
+
+    container->DataNodeReactRoot.attach(newRoot)
+    container->Diagram__Transform.attach(Diagram__Transform.t(~scale=1.))
+
+    container->Diagram__Layout.attach(Diagram__Layout.make())
+
+    newRoot
   }
 
-  let parentComponent = Js.Nullable.null
-  Diagram__DOMReconciler.reconciler.updateContainer(.
-    whatToRender,
-    container,
-    parentComponent /* , callback */,
-  )
+  Diagram__DOMReconciler.reconciler.updateContainer(. element, root, Js.Nullable.null)
 }

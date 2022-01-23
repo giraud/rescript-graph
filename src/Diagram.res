@@ -36,37 +36,18 @@ module WithPointerEvents = {
   }
 }
 
-@get external mouseEventTarget: ReactEvent.Mouse.t => Dom.element = "target"
-@get external mousePointerId: ReactEvent.Mouse.t => string = "pointerId"
-@get external clientX: ReactEvent.Wheel.t => float = "clientX"
-@get external clientY: ReactEvent.Wheel.t => float = "clientY"
-
-let setTransform = (node, x, y, scale) =>
-  node->Diagram__Dom.setStyleTransform(
-    "translate3d(" ++
-    Js.Float.toString(x) ++
-    "px," ++
-    Js.Float.toString(y) ++
-    "px,0px) scale3d(" ++
-    Js.Float.toString(scale) ++
-    "," ++
-    Js.Float.toString(scale) ++ ",1)",
-  )
-
 @react.component
 let make = (~width, ~height, ~className=?, ~minScale=0.1, ~maxScale=1.5, ~children) => {
   let diagramNode = React.useRef(None)
   let canvasNode = React.useRef(None)
   let slidingEnabled = React.useRef(false)
   let origin = React.useRef((0., 0.))
-  let scale = React.useRef(1.)
 
   let initRender = domNode => {
     canvasNode.current = domNode->Js.toOption
     switch canvasNode.current {
     | Some(container) =>
       diagramNode.current = container->Diagram__Dom.parentNode->Js.toOption
-      container->Diagram__Layout.attachLayout(Diagram__Layout.make(scale.current))
       Diagram__DOMRenderer.render(children, container)
     | None => ()
     }
@@ -74,8 +55,10 @@ let make = (~width, ~height, ~className=?, ~minScale=0.1, ~maxScale=1.5, ~childr
 
   let beginSliding = (. e) =>
     switch diagramNode.current {
-    | Some(node) if e->mouseEventTarget == node =>
-      e->mouseEventTarget->Diagram__Dom.setPointerCapture(e->mousePointerId)
+    | Some(node) if e->Diagram__Dom.mouseEventTarget == node =>
+      e
+      ->Diagram__Dom.mouseEventTarget
+      ->Diagram__Dom.setPointerCapture(e->Diagram__Dom.mousePointerId)
       slidingEnabled.current = true
     | _ => ()
     }
@@ -90,13 +73,16 @@ let make = (~width, ~height, ~className=?, ~minScale=0.1, ~maxScale=1.5, ~childr
         let y' = y +. Js.Int.toFloat(e->ReactEvent.Mouse.movementY)
         origin.current = (x', y')
 
-        container->setTransform(x', y', scale.current)
+        let scale = container->Diagram__Transform.get->Diagram__Transform.scaleGet
+        container->Diagram__Dom.setTransform(x', y', scale)
       }
     }
 
   let stopSliding = (. e) => {
     slidingEnabled.current = false
-    e->mouseEventTarget->Diagram__Dom.releasePointerCapture(e->mousePointerId)
+    e
+    ->Diagram__Dom.mouseEventTarget
+    ->Diagram__Dom.releasePointerCapture(e->Diagram__Dom.mousePointerId)
   }
 
   let zoom = e =>
@@ -104,24 +90,23 @@ let make = (~width, ~height, ~className=?, ~minScale=0.1, ~maxScale=1.5, ~childr
     | None => ()
     | Some(container) =>
       let (x, y) = origin.current
+      let pointerX = e->Diagram__Dom.clientX
+      let pointerY = e->Diagram__Dom.clientY
+      let scale = container->Diagram__Transform.get->Diagram__Transform.scaleGet
 
-      let pointerX = e->clientX
-      let pointerY = e->clientY
+      let x' = (pointerX -. x) /. scale
+      let y' = (pointerY -. y) /. scale
 
-      let x' = (pointerX -. x) /. scale.current
-      let y' = (pointerY -. y) /. scale.current
-
-      let scale' = scale.current +. e->ReactEvent.Wheel.deltaY *. -0.0005 *. scale.current
+      let scale' = scale +. e->ReactEvent.Wheel.deltaY *. -0.0005 *. scale
       let scale'' = Js.Math.min_float(maxScale, Js.Math.max_float(minScale, scale'))
 
       let x'' = pointerX -. x' *. scale''
       let y'' = pointerY -. y' *. scale''
 
       origin.current = (x'', y'')
-      scale.current = scale''
+      container->Diagram__Transform.get->Diagram__Transform.scaleSet(scale'')
 
-      container->Diagram__Layout.getLayout->Diagram__Layout.updateScale(scale'')
-      container->setTransform(x'', y'', scale'')
+      container->Diagram__Dom.setTransform(x'', y'', scale'')
     }
 
   <WithPointerEvents onPointerDown=beginSliding onPointerUp=stopSliding onPointerMove=slide>

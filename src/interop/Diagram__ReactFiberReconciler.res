@@ -1,29 +1,32 @@
 type t = {
-  createContainer: (. Dom.element, bool, bool, Js.nullable<Dom.element>) => Dom.element,
+  createContainer: (. Dom.element) => Dom.element,
   updateContainer: (. React.element, Dom.element, Js.nullable<Dom.element>) => unit,
-  getPublicRootInstance: (. Dom.element) => Dom.element,
 }
 
 type rootContainer = Dom.element
 type instance = Dom.element
+type internalHandle
 type timestamp
 type elementType = string
+type context<'a> = Js.t<'a>
 type props<'a> = Js.t<'a>
-type internalHandle
-type containerInfo = Dom.element
 
 // https://github.com/facebook/react/tree/main/packages/react-reconciler
-type hostConfig<'context, 'a> = {
+type hostConfig<'a, 'c, 'commit> = {
   isPrimaryRenderer: bool,
   supportsMutation: bool,
+  useSyncScheduling: bool,
+  getRootHostContext: rootContainer => context<'c>,
+  getChildHostContext: (context<'c>, elementType, rootContainer) => context<'c>,
+  //
   createInstance: (
     elementType,
     props<'a>,
     rootContainer,
-    'context,
+    context<'c>,
     internalHandle,
-  ) => Js.nullable<Dom.element>,
-  createTextInstance: string /* , props, internalInstanceHandle */ => Dom.element,
+  ) => Dom.element,
+  createTextInstance: (string, props<'a>, internalHandle) => Dom.element,
   /**
    This method should mutate the parentInstance and add the child to its list of children.
    For example, in the DOM this would translate to a parentInstance.appendChild(child) call.
@@ -48,27 +51,24 @@ type hostConfig<'context, 'a> = {
 
    If you don't want to do anything here, you should return false.
  */
-  finalizeInitialChildren: (instance, elementType, props<'a>, rootContainer, 'context) => bool,
-  shouldSetTextContent: unit => bool,
-  getRootHostContext: rootContainer => 'context,
-  getChildHostContext: ('context, elementType, rootContainer) => 'context,
+  finalizeInitialChildren: (instance, elementType, props<'a>, rootContainer, context<'c>) => bool,
+  shouldSetTextContent: (elementType, props<'a>) => bool,
   getPublicInstance: instance => instance,
-  //  prepareUpdate: (Dom.element, elementType, props<'a>, props<'a>, rootContainer, 'context) => unit,
-  prepareForCommit: containerInfo => unit,
-  resetAfterCommit: containerInfo => unit,
-  //  preparePortalMount: unit => unit,
-  //  now: unit => timestamp,
-  //  scheduleTimeout: unit => unit,
-  //  cancelTimeout: unit => unit,
-  //  noTimeout: int,
-  //  supportsMicrotask: unit => unit,
-  //  getCurrentEventPriority: unit => unit,
-  //  createContainerChildSet: unit => unit,
-  //  appendChildToContainerChildSet: unit => unit,
-  //  finalizeContainerChildren: unit => unit,
-  //  replaceContainerChildren: unit => unit,
-  //   Mutation methods
-
+  prepareUpdate: (Dom.element, elementType, props<'a>, props<'a>) => array<string>,
+  commitUpdate: (
+    Dom.element,
+    array<string>,
+    elementType,
+    props<'a>,
+    props<'a>,
+    internalHandle,
+  ) => unit,
+  insertBefore: (Dom.element, Dom.element, Dom.element) => unit,
+  insertInContainerBefore: (Dom.element, Dom.element, Dom.element) => unit,
+  prepareForCommit: Dom.element => Js.nullable<'commit>,
+  resetAfterCommit: Dom.element => unit,
+  commitTextUpdate: (Dom.element, string, string) => unit,
+  resetTextContent: Dom.element => unit,
   /**
    This method should mutate the parentInstance and add the child to its list of children.
    For example, in the DOM this would translate to a parentInstance.appendChild(child) call.
@@ -83,9 +83,6 @@ type hostConfig<'context, 'a> = {
    or if the root container nodes are of a different type than the rest of the tree.
  */
   appendChildToContainer: (Dom.element, Dom.element) => unit,
-  //  insertBefore: unit => unit,
-  //  insertInContainerBefore: unit => unit,
-
   /**
    This method should mutate the parentInstance to remove the child from the list of its children.
 
@@ -100,8 +97,6 @@ type hostConfig<'context, 'a> = {
    than the rest of the tree.
  */
   removeChildFromContainer: (Dom.element, Dom.element) => unit,
-  //  resetTextContent: unit => unit,
-  //  commitTextUpdate: unit => unit,
   /**
    This method is only called if you returned true from finalizeInitialChildren for this instance.
 
@@ -120,16 +115,11 @@ type hostConfig<'context, 'a> = {
    If you never return true from finalizeInitialChildren, you can leave it empty.
  */
   commitMount: (instance, elementType, props<'a>, internalHandle) => unit,
-  //  commitUpdate: unit => unit,
-  //  hideInstance: unit => unit,
-  //  hideTextInstance: unit => unit,
-  //  unhideInstance: unit => unit,
-  //  unhideTextInstance: unit => unit,
   /**
   This method should mutate the container root node and remove all children from it.
  */
-  clearContainer: Dom.element /* container */ => unit,
+  clearContainer: rootContainer => unit,
 }
 
 @module("react-reconciler")
-external make: hostConfig<'context, 'a> => t = "default"
+external make: hostConfig<'a, 'c, 'context> => t = "default"

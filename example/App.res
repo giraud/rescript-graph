@@ -3,6 +3,7 @@
 @val @scope("document")
 external getElementById: string => Js.nullable<Dom.element> = "getElementById"
 
+let sample_one = "1"
 let sample1 = "1|2|3||1-2|1-3"
 let sample2 = "1|2|3|4|5|6|7||1-2|1-3|1-5|2-3|2-7|4-1|6-6"
 
@@ -20,11 +21,11 @@ let parse = instructions => {
 }
 
 let renderArray = (a, fn) => a->Belt.Array.map(fn)->React.array
-
+// n n e n c
 module App = {
   @react.component
   let make = () => {
-    let (initialNodes, initialEdges) = parse(sample2)
+    let (initialNodes, initialEdges) = parse(sample_one)
 
     let (id, setId) = React.useState(() => initialNodes->Belt.Array.length)
     let (start, setStart) = React.useState(() => "")

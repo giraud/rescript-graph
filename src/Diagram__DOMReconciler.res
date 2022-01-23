@@ -2,14 +2,14 @@ module Dom = Diagram__Dom
 
 @module("../../../src/debug.js")
 external debugMethods: (
-  Diagram__ReactFiberReconciler.hostConfig<'context, 'a>,
+  Diagram__ReactFiberReconciler.hostConfig<'a, 'c, 'commit>,
   array<string>,
-) => Diagram__ReactFiberReconciler.hostConfig<'context, 'a> = "debugMethods"
+) => Diagram__ReactFiberReconciler.hostConfig<'a, 'c, 'commit> = "debugMethods"
 @module("../../../src/debug.js")
 external noDebugMethods: (
-  Diagram__ReactFiberReconciler.hostConfig<'context, 'a>,
+  Diagram__ReactFiberReconciler.hostConfig<'a, 'c, 'commit>,
   array<string>,
-) => Diagram__ReactFiberReconciler.hostConfig<'context, 'a> = "noDebugMethods"
+) => Diagram__ReactFiberReconciler.hostConfig<'a, 'c, 'commit> = "noDebugMethods"
 
 let getRootContainer = (instance, elementType) =>
   switch (elementType, instance->Dom.parentNode->Js.toOption) {
@@ -59,42 +59,59 @@ let createEdge = (id, label) => {
   g
 }
 
+let shallowDiff = (oldObj, newObj) => {
+  let oldKeys = Belt.Set.String.fromArray(Js.Obj.keys(oldObj))
+  let newKeys = Js.Obj.keys(newObj)
+
+  let uniqueKeys = oldKeys->Belt.Set.String.mergeMany(newKeys)->Belt.Set.String.toArray
+  uniqueKeys->Belt.Array.keep(%raw(`name => oldObj[name] !== newObj[name]`))
+}
+
 let reconciler = Diagram__ReactFiberReconciler.make(
-  noDebugMethods(
+  debugMethods(
     {
       isPrimaryRenderer: false,
       supportsMutation: true,
+      useSyncScheduling: true,
       getPublicInstance: instance => instance,
-      prepareForCommit: _containerInfo => (),
-      resetAfterCommit: _containerInfo => (),
+      prepareForCommit: _ => Js.Nullable.null,
+      resetAfterCommit: _ => (),
       //
       createInstance: (elementType, props, rootContainer, _context, _internalHandle) => {
-        rootContainer->Diagram__Layout.getLayout->Diagram__Layout.incrementCount(elementType)
-
         let element = switch elementType {
-        | "Node" => createNode(props["nodeId"]->Belt.Option.getWithDefault("nodeId"))
+        | "Node" =>
+          rootContainer->Diagram__Layout.get->Diagram__Layout.incrementCount(elementType)
+          createNode(props["nodeId"]->Belt.Option.getWithDefault("nodeId"))
         | "Edge" =>
           let id =
             props["source"]->Belt.Option.getWithDefault("source") ++
             "-" ++
             props["target"]->Belt.Option.getWithDefault("target")
+          rootContainer->Diagram__Layout.get->Diagram__Layout.incrementCount(elementType)
           createEdge(id, props["label"]->Belt.Option.getWithDefault(""))
         | _ => Dom.Document.createElement(elementType)
         }
 
-        Js.Nullable.return(element)
+        element
       },
-      createTextInstance: text => Dom.Document.createTextNode(text),
-      shouldSetTextContent: () => false,
+      createTextInstance: (text, _, _) => Dom.Document.createTextNode(text),
+      shouldSetTextContent: (_elementType, props) => {
+        let children = props["children"]
+        Js.typeof(children) == "string" || Js.typeof(children) == "number"
+      },
       getRootHostContext: rootContainer => {
-        rootContainer->Diagram__Layout.getLayout->Diagram__Layout.reset
-        ""
+        Js.log(rootContainer->Diagram__Layout.get) //->Diagram__Layout.reset
+        Js.Obj.empty()
       },
       getChildHostContext: (parentHostContext, _elementType, _rootContainer) => parentHostContext,
       appendChild: (parentInstance, child) => parentInstance->Dom.appendChild(child),
       appendChildToContainer: (rootContainer, child) => rootContainer->Dom.appendChild(child),
       removeChild: (parentInstance, child) => parentInstance->Dom.removeChild(child),
       removeChildFromContainer: (rootContainer, child) => rootContainer->Dom.removeChild(child),
+      insertBefore: (parentInstance, child, beforeChild) =>
+        parentInstance->Dom.insertBefore(child, beforeChild),
+      insertInContainerBefore: (container, child, beforeChild) =>
+        container->Dom.insertBefore(child, beforeChild),
       appendInitialChild: (parentInstance, child) => parentInstance->Dom.appendChild(child),
       finalizeInitialChildren: (domElement, elementType, props, _rootContainer, _hostContext) => {
         props
@@ -102,7 +119,12 @@ let reconciler = Diagram__ReactFiberReconciler.make(
         ->Belt.Array.forEach(key => {
           let value = %raw(`props[key]`)
           switch (elementType, key, value) {
-          | (_, "children", _) => ()
+          | (_, "children", children) =>
+            // Set the textContent only for literal string or number children, whereas
+            // nodes will be appended in `appendChild`
+            if Js.typeof(children) == "string" || Js.typeof(children) == "number" {
+              domElement->Dom.setTextContent(value)
+            }
           | ("Node", "nodeId", _) => ()
           | ("Edge", "from", _) => ()
           | ("Edge", "to", _) => ()
@@ -119,12 +141,77 @@ let reconciler = Diagram__ReactFiberReconciler.make(
         elementType == "Node" || elementType == "Edge"
       },
       //
-      commitMount: (domElement, elementType, props, _internalHandle) => {
+      prepareUpdate: (_domElement, _elementType, oldProps, newProps) =>
+        shallowDiff(oldProps, newProps),
+      commitUpdate: (
+        domElement,
+        updatePayload,
+        _elementType,
+        _oldProps,
+        _newProps,
+        _internalHandle,
+      ) => {
+        updatePayload->Belt.Array.forEach(propName => {
+          let newValue = %raw(`_newProps[propName]`)
+
+          if propName === "children" {
+            // children changes is done by the other methods like `commitTextUpdate`
+            if Js.typeof(newValue) == "string" || Js.typeof(newValue) == "number" {
+              domElement->Dom.setTextContent(newValue)
+            }
+          } else if propName === "style" {
+            // Return a diff between the new and the old styles
+            /* const styleDiffs = shallowDiff(oldProps.style, newProps.style);
+                          const finalStyles = styleDiffs.reduce((acc, styleName) => {
+                            // Style marked to be unset
+                            if (!newProps.style[styleName]) acc[styleName] = "";
+                            else acc[styleName] = newProps.style[styleName];
+
+                            return acc;
+                          }, {});
+
+                          setStyles(domElement, finalStyles); */
+            ()
+          } else {
+            switch newValue {
+            | None if isEventName(propName) =>
+              // event is not here anymore
+              Js.log2("no event", propName)
+
+              let eventName = propName->Js.String2.toLowerCase->Js.String2.replace("on", "")
+              domElement->Dom.removeEventListener(eventName, %raw(`_oldProps[propName]`))
+            | None =>
+              // attribute is not here anymore
+              Js.log2("no attr", propName)
+              domElement->Dom.removeAttribute(propName)
+            | Some(event) if isEventName(propName) =>
+              Js.log2("change event", propName)
+              let eventName = propName->Js.String2.toLowerCase->Js.String2.replace("on", "")
+              domElement->Dom.removeEventListener(eventName, %raw(`_oldProps[propName]`))
+              domElement->Dom.addEventListener(eventName, event)
+            | Some(attribute) if propName == "className" =>
+              Js.log3("update attribute", propName, attribute)
+              domElement->Dom.setAttribute("class", attribute)
+            | Some(attribute) =>
+              Js.log3("update attribute", propName, attribute)
+              domElement->Dom.setAttribute(propName, attribute)
+            }
+          }
+        })
+      },
+      commitTextUpdate: (domElement, _oldText, newText) => {
+        domElement->Dom.setNodeValue(newText)
+      },
+      resetTextContent: domElement => {
+        domElement->Dom.setTextContent("")
+      },
+      //
+      commitMount: (domElement, elementType, props, _internalHandle) =>
         switch getRootContainer(domElement, elementType) {
         | None => ()
         | Some(container) =>
           open Diagram__Layout
-          let layout = container->getLayout
+          let layout = container->get
 
           switch elementType {
           | "Node" =>
@@ -132,7 +219,8 @@ let reconciler = Diagram__ReactFiberReconciler.make(
             | None => ()
             | Some(id) =>
               let rect = Dom.getBoundingClientRect(domElement)
-              layout->setNode(id, rect.width, rect.height)
+              let scale = container->Diagram__Transform.get->Diagram__Transform.scaleGet
+              layout->setNode(id, rect.width /. scale, rect.height /. scale)
             }
           | "Edge" =>
             switch (props["source"], props["target"]) {
@@ -144,10 +232,10 @@ let reconciler = Diagram__ReactFiberReconciler.make(
 
           if layout->allNodesProcessed {
             // do it
+            Js.log("do layout")
             layout->run(container)
           }
-        }
-      },
+        },
       clearContainer: container => {
         let nodeType = container->Dom.nodeType
         if nodeType == Dom.NodeType.element {
@@ -157,6 +245,11 @@ let reconciler = Diagram__ReactFiberReconciler.make(
         }
       },
     },
-    [],
+    [
+      /* methods to exclude from debug */
+      "shouldSetTextContent",
+      "getRootHostContext",
+      "getChildHostContext",
+    ],
   ),
 )

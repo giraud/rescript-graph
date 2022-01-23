@@ -24,9 +24,12 @@ module Window = {
 
 @send external hasOwnProperty: (Dom.element, string) => bool = "hasOwnProperty"
 @send external appendChild: (Dom.element, Dom.element) => unit = "appendChild"
+@send external insertBefore: (Dom.element, Dom.element, Dom.element) => unit = "insertBefore"
 @send external removeChild: (Dom.element, Dom.element) => unit = "removeChild"
 @send external setAttribute: (Dom.element, string, string) => unit = "setAttribute"
+@send external removeAttribute: (Dom.element, string) => unit = "removeAttribute"
 @send external addEventListener: (Dom.element, string, 'a) => unit = "addEventListener"
+@send external removeEventListener: (Dom.element, string, 'a) => unit = "removeEventListener"
 @send external getBoundingClientRect: Dom.element => domRect = "getBoundingClientRect"
 @send external closest: (Dom.element, string) => Js.nullable<Dom.element> = "closest"
 @send external querySelectorAll: (Dom.element, string) => array<Dom.element> = "querySelectorAll"
@@ -40,6 +43,7 @@ module Window = {
 @get external children: Dom.element => array<Dom.element> = "children"
 
 @set external setId: (Dom.element, string) => unit = "id"
+@set external setNodeValue: (Dom.element, string) => unit = "nodeValue"
 @set external setTextContent: (Dom.element, string) => unit = "textContent"
 @set external setDocument: (Dom.element, Dom.element) => unit = "document"
 
@@ -49,3 +53,19 @@ let setTranslate3d = (node, x, y) =>
   node->setStyleTransform(
     "translate3d(" ++ Js.Float.toString(x) ++ "px," ++ Js.Float.toString(y) ++ "px,0px)",
   )
+let setTransform = (node, x, y, scale) =>
+  node->setStyleTransform(
+    "translate3d(" ++
+    Js.Float.toString(x) ++
+    "px," ++
+    Js.Float.toString(y) ++
+    "px,0px) scale3d(" ++
+    Js.Float.toString(scale) ++
+    "," ++
+    Js.Float.toString(scale) ++ ",1)",
+  )
+
+@get external mouseEventTarget: ReactEvent.Mouse.t => Dom.element = "target"
+@get external mousePointerId: ReactEvent.Mouse.t => string = "pointerId"
+@get external clientX: ReactEvent.Wheel.t => float = "clientX"
+@get external clientY: ReactEvent.Wheel.t => float = "clientY"
