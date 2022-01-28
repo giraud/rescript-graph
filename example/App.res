@@ -21,11 +21,12 @@ let parse = instructions => {
 }
 
 let renderArray = (a, fn) => a->Belt.Array.map(fn)->React.array
-// n n e n c
+
 module App = {
   @react.component
   let make = () => {
-    let (initialNodes, initialEdges) = parse(sample_one)
+    let (initialNodes, initialEdges) = parse(sample2)
+    let (commands, setCommands) = React.useState(() => None)
 
     let (id, setId) = React.useState(() => initialNodes->Belt.Array.length)
     let (start, setStart) = React.useState(() => "")
@@ -33,12 +34,19 @@ module App = {
     let (nodes, setNodes) = React.useState(() => initialNodes)
     let (edges, setEdges) = React.useState(() => initialEdges)
 
-    let clear = _ => {
+    let reset = _ =>
+      switch commands {
+      | None => ()
+      | Some(c) => c.Diagram.Commands.reset()
+      }
+
+    let clear = e => {
       setId(_ => 0)
       setStart(_ => "")
       setEnd(_ => "")
       setNodes(_ => [])
       setEdges(_ => [])
+      reset(e)
     }
 
     let addNode = _ => {
@@ -81,9 +89,14 @@ module App = {
           {"Add edge"->React.string}
         </button>
         <button onClick={clear}> {"Clear"->React.string} </button>
+        <button onClick={reset}> {"Reset"->React.string} </button>
         <a href="https://github.com/giraud/rescript-diagram"> {"Github"->React.string} </a>
       </div>
-      <Diagram className="diagram" width="100%" height="100%">
+      <Diagram
+        className="diagram"
+        width="100%"
+        height="100%"
+        onCreation={commands => setCommands(_ => Some(commands))}>
         {nodes->renderArray(nodeId =>
           <Diagram.Node
             key={nodeId}

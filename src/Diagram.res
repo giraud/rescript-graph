@@ -36,8 +36,18 @@ module WithPointerEvents = {
   }
 }
 
+module Commands = Diagram__DOMRenderer.Commands
+
 @react.component
-let make = (~width, ~height, ~className=?, ~minScale=0.1, ~maxScale=1.5, ~children) => {
+let make = (
+  ~width,
+  ~height,
+  ~className=?,
+  ~minScale=0.1,
+  ~maxScale=1.5,
+  ~onCreation=?,
+  ~children,
+) => {
   let diagramNode = React.useRef(None)
   let canvasNode = React.useRef(None)
   let slidingEnabled = React.useRef(false)
@@ -48,7 +58,14 @@ let make = (~width, ~height, ~className=?, ~minScale=0.1, ~maxScale=1.5, ~childr
     switch canvasNode.current {
     | Some(container) =>
       diagramNode.current = container->Diagram__Dom.parentNode->Js.toOption
-      Diagram__DOMRenderer.render(children, container)
+      Diagram__DOMRenderer.render(children, container, t => {
+        let reset = () => {
+          origin.current = (0., 0.)
+          t->Diagram__Transform.scaleSet(1.)
+          container->Diagram__Dom.setTransform(0., 0., 1.)
+        }
+        onCreation->Belt.Option.forEach(fn => fn(Diagram__DOMRenderer.Commands.make(reset)))
+      })
     | None => ()
     }
   }

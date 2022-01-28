@@ -9,8 +9,8 @@ let setNode = (layout, id, width, height) => {
     id,
     {
       "label": "node_" ++ id,
-      "width": width, //(width /. layout.scale.contents),
-      "height": height, //(height /. layout.scale.contents),
+      "width": width,
+      "height": height,
     },
   )
   layout.processed := layout.processed.contents + 1

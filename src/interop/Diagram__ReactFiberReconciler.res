@@ -1,6 +1,11 @@
 type t = {
   createContainer: (. Dom.element) => Dom.element,
-  updateContainer: (. React.element, Dom.element, Js.nullable<Dom.element>) => unit,
+  updateContainer: (
+    . React.element,
+    Dom.element,
+    Js.nullable<Dom.element>,
+    option<unit => unit>,
+  ) => unit,
 }
 
 type rootContainer = Dom.element

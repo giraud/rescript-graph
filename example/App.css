@@ -45,7 +45,7 @@ main {
 }
 
 .toolbar a {
-    flex-grow: 1;
+    margin-left: auto;
     text-align: right;
     color: var(--color-text)
 }
