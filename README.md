@@ -15,6 +15,20 @@ I'm just playing with react-reconciler (as a learning exercise) and an automatic
 - no styling
 - full rescript (_except impossible constructs, like uppercase variables_)
 
+# Setup
+
+clone this project, then:
+
+```
+npm install
+npm run build
+npm run dev 
+```
+
+Simple application demo can be found in the `example` folder.
+
+# Usage
+
 ## Minimal code
 
 ```rescript
@@ -28,18 +42,6 @@ let make = () =>
 ```
 
 Note: you need to provide your own css styling.
-
-## How to use
-
-clone this project, then:
-
-```
-npm install
-npm run build
-npm run dev 
-```
-
-Simple application demo can be found in the `example` folder.
 
 ## Dynamic layout
 
@@ -83,7 +85,7 @@ module App = {
 }
 ```
 
-## Links
+# Links
 
 - https://github.com/facebook/react/tree/main/packages/react-reconciler
 - https://github.com/chentsulin/awesome-react-renderer
