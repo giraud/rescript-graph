@@ -1,4 +1,4 @@
-# Rescript-diagram
+# Rescript React Diagram
 
 Easy to use automatic diagram layout component in react.
 
