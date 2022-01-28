@@ -9,7 +9,7 @@ type internalHandle
 type timestamp
 type elementType = string
 type context<'a> = Js.t<'a>
-type props<'a> = Js.t<'a>
+type props<'a> = Js.Dict.t<'a>
 
 // https://github.com/facebook/react/tree/main/packages/react-reconciler
 type hostConfig<'a, 'c, 'commit> = {

@@ -41,6 +41,7 @@ module Window = {
 @get external parentNode: Dom.element => Js.nullable<Dom.element> = "parentNode"
 @get external nextSibling: Dom.element => Js.nullable<Dom.element> = "nextSibling"
 @get external children: Dom.element => array<Dom.element> = "children"
+@get external style: Dom.element => Js.Dict.t<'a> = "style"
 
 @set external setId: (Dom.element, string) => unit = "id"
 @set external setNodeValue: (Dom.element, string) => unit = "nodeValue"
