@@ -1,10 +1,10 @@
 :root {
-    --color-canvas: #22272e;
+    --color-canvas: 215, 15%, 16%; /* #22272e */
     --color-menu: #2d333b;
     --color-border: #8d98a5;
     --color-text: #cdd9e5;
     --color-hover: #539bf5;
-    --color-selected: hsl(6, 100%, 64%); /*#ff55847;*/
+    --color-selected: hsl(6, 100%, 64%); /* #ff55847 */
 }
 
 *, *::before, *::after {
@@ -23,7 +23,7 @@ html, body {
 body {
     font-size: 14px;
     -webkit-font-smoothing: antialiased;
-    background-color: var(--color-canvas);
+    background-color: hsla(var(--color-canvas), 1);
 }
 
 #root, main {
@@ -54,9 +54,19 @@ main {
     cursor: move;
 }
 
+.diagram div[data-map] {
+    width: 100px;
+    height: 100px;
+    bottom: 10px;
+    right: 10px;
+    cursor: default;
+    border: 1px solid var(--color-border);
+    background-color: hsla(0, 0%, 0%, 0.8);
+}
+
 div[data-node] {
     border: 1px solid var(--color-border);
-    background-color: var(--color-canvas);
+    background-color: hsla(var(--color-canvas), 1);
     color: var(--color-text);
     border-radius: 5px;
     padding: 5px;
@@ -83,7 +93,7 @@ svg[data-edge] path {
 
 svg[data-edge] circle, svg[data-edge] polygon {
     stroke: var(--color-border);
-    fill: var(--color-canvas)
+    fill: hsla(var(--color-canvas), 1)
 }
 
 div[data-edge-label] {

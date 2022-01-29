@@ -31,7 +31,7 @@ let incrementCount = (layout, elementType) =>
   | _ => ()
   }
 
-let allNodesProcessed = layout => layout.processed.contents == layout.count.contents
+let allNodesProcessed = _layout => true // apply every time layout.processed.contents == layout.count.contents
 
 let processNodes = (layout, fn) =>
   layout.engine.contents

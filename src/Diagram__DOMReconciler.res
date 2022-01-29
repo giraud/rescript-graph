@@ -11,12 +11,19 @@ external noDebugMethods: (
   array<string>,
 ) => Diagram__ReactFiberReconciler.hostConfig<'a, 'b, 'c> = "noDebugMethods"
 
-let getRootContainer = (instance, elementType) =>
-  switch (elementType, instance->Dom.parentNode->Js.toOption) {
-  | ("Node", parent) => parent
-  | ("Edge", Some(parentNode)) => parentNode->Dom.closest("div")->Js.toOption
-  | _ => None
-  }
+let getRootContainer = instance => {
+  let parentNode = instance->Dom.parentNode->Js.toOption
+  parentNode->Belt.Option.flatMap(node => node->Dom.parentNode->Js.toOption)
+}
+
+let updateBBox = rootContainer =>
+  rootContainer->Dom.forFirstChild(canvasNode =>
+    canvasNode->Dom.forFirstChild(boxNode => {
+      let (width, height) = rootContainer->Diagram__Transform.get->Diagram__Transform.bbox
+      boxNode->Dom.style->Js.Dict.set("width", width)
+      boxNode->Dom.style->Js.Dict.set("height", height)
+    })
+  )
 
 let isEventName = name =>
   name->Js.String2.startsWith("on") && Dom.Window.hasOwnProperty(name->Js.String2.toLowerCase)
@@ -59,6 +66,13 @@ let createEdge = (id, label) => {
   g
 }
 
+let createMap = () => {
+  let element = Dom.Document.createElement("div")
+  element->Dom.setAttribute("data-map", "")
+  element->Dom.setAttribute("style", "position:absolute;")
+  element
+}
+
 let setStyles = (domElement, styles) =>
   Js.Dict.keys(styles)->Belt.Array.forEach(name => {
     let style = domElement->Dom.style
@@ -81,7 +95,7 @@ let shallowDiff = (oldObj, newObj) => {
 }
 
 let reconciler = Diagram__ReactFiberReconciler.make(
-  noDebugMethods(
+  debugMethods(
     {
       isPrimaryRenderer: false,
       supportsMutation: true,
@@ -102,6 +116,7 @@ let reconciler = Diagram__ReactFiberReconciler.make(
             props->Js.Dict.get("target")->Belt.Option.getWithDefault("target")
           rootContainer->Diagram__Layout.get->Diagram__Layout.incrementCount(elementType)
           createEdge(id, props->Js.Dict.get("label")->Belt.Option.getWithDefault(""))
+        | "Map" => createMap()
         | _ => Dom.Document.createElement(elementType)
         }
 
@@ -114,20 +129,41 @@ let reconciler = Diagram__ReactFiberReconciler.make(
         Js.typeof(children) == "string" || Js.typeof(children) == "number"
       },
       //
-      getRootHostContext: _rootContainer => {
+      getRootHostContext: rootContainer => {
+        rootContainer->Diagram__Layout.get->Diagram__Layout.reset
+        rootContainer->Diagram__Transform.get->Diagram__Transform.resetBBox
+        rootContainer->updateBBox
         Js.Obj.empty()
       },
       getChildHostContext: (parentHostContext, _elementType, _rootContainer) => parentHostContext,
       //
       appendInitialChild: (parentInstance, child) => parentInstance->Dom.appendChild(child),
       appendChild: (parentInstance, child) => parentInstance->Dom.appendChild(child),
-      appendChildToContainer: (rootContainer, child) => rootContainer->Dom.appendChild(child),
+      appendChildToContainer: (rootContainer, child) =>
+        switch child->Dom.dataset->Js.Dict.get("map") {
+        | None => rootContainer->Dom.forFirstChild(canvas => canvas->Dom.appendChild(child))
+        | Some(_) => rootContainer->Dom.appendChild(child)
+        },
+      //
       removeChild: (parentInstance, child) => parentInstance->Dom.removeChild(child),
-      removeChildFromContainer: (rootContainer, child) => rootContainer->Dom.removeChild(child),
+      removeChildFromContainer: (rootContainer, child) =>
+        switch child->Dom.dataset->Js.Dict.get("map") {
+        | None => rootContainer->Dom.forFirstChild(canvas => canvas->Dom.removeChild(child))
+        | Some(_) => rootContainer->Dom.removeChild(child)
+        },
+      //
       insertBefore: (parentInstance, child, beforeChild) =>
         parentInstance->Dom.insertBefore(child, beforeChild),
-      insertInContainerBefore: (container, child, beforeChild) =>
-        container->Dom.insertBefore(child, beforeChild),
+      insertInContainerBefore: (rootContainer, child, beforeChild) =>
+        switch beforeChild->Dom.dataset->Js.Dict.get("map") {
+        | Some(_) => rootContainer->Dom.forFirstChild(canvas => canvas->Dom.appendChild(child))
+        | None =>
+          switch child->Dom.dataset->Js.Dict.get("map") {
+          | None =>
+            rootContainer->Dom.forFirstChild(canvas => canvas->Dom.insertBefore(child, beforeChild))
+          | Some(_) => rootContainer->Dom.insertBefore(child, beforeChild)
+          }
+        },
       //
       finalizeInitialChildren: (domElement, elementType, props, _rootContainer, _hostContext) => {
         props
@@ -155,7 +191,6 @@ let reconciler = Diagram__ReactFiberReconciler.make(
             domElement->Dom.addEventListener(eventName, props->Js.Dict.unsafeGet(name))
           | (_, name /* , value */) =>
             domElement->Dom.setAttribute(name, props->Js.Dict.unsafeGet(name))
-          //          | (_, _, None) => ()
           }
         })
 
@@ -168,7 +203,7 @@ let reconciler = Diagram__ReactFiberReconciler.make(
       commitUpdate: (
         domElement,
         updatePayload,
-        _elementType,
+        elementType,
         oldProps,
         newProps,
         _internalHandle,
@@ -216,6 +251,49 @@ let reconciler = Diagram__ReactFiberReconciler.make(
             }
           }
         })
+
+        switch getRootContainer(domElement) {
+        | None => ()
+        | Some(container) =>
+          switch elementType {
+          | "Node" =>
+            switch newProps->Js.Dict.get("nodeId") {
+            | None => ()
+            | Some(id) =>
+              let rect = Dom.getBoundingClientRect(domElement)
+              let scale = container->Diagram__Transform.get->Diagram__Transform.scaleGet
+              container
+              ->Diagram__Layout.get
+              ->Diagram__Layout.setNode(id, rect.width /. scale, rect.height /. scale)
+            }
+          | "Edge" =>
+            switch (newProps->Js.Dict.get("source"), newProps->Js.Dict.get("target")) {
+            | (Some(source), Some(target)) =>
+              container->Diagram__Layout.get->Diagram__Layout.setEdge(source, target)
+            | _ => ()
+            }
+          | _ => ()
+          }
+
+          switch elementType {
+          | "Node"
+          | "Edge" =>
+            let layout = container->Diagram__Layout.get
+            let transform = container->Diagram__Transform.get
+            // compute a new layout
+            layout->Diagram__Layout.run(container)
+            // compute bbox
+            transform->Diagram__Transform.resetBBox
+            container
+            ->Diagram__Layout.get
+            ->Diagram__Layout.processNodes((_, nodeInfo) =>
+              transform->Diagram__Transform.computeBBox(nodeInfo)
+            )
+            // update bbox
+            container->updateBBox
+          | _ => ()
+          }
+        }
       },
       //
       commitTextUpdate: (domElement, _oldText, newText) => {
@@ -227,7 +305,7 @@ let reconciler = Diagram__ReactFiberReconciler.make(
       },
       //
       commitMount: (domElement, elementType, props, _internalHandle) =>
-        switch getRootContainer(domElement, elementType) {
+        switch getRootContainer(domElement) {
         | None => ()
         | Some(container) =>
           open Diagram__Layout
@@ -250,25 +328,49 @@ let reconciler = Diagram__ReactFiberReconciler.make(
           | _ => ()
           }
 
-          if layout->allNodesProcessed {
-            // do it
-            layout->run(container)
+          switch elementType {
+          | "Node"
+          | "Edge" =>
+            let layout = container->Diagram__Layout.get
+            let transform = container->Diagram__Transform.get
+            // compute a new layout
+            layout->Diagram__Layout.run(container)
+            // compute bbox
+            transform->Diagram__Transform.resetBBox
+            layout->Diagram__Layout.processNodes((_, nodeInfo) =>
+              transform->Diagram__Transform.computeBBox(nodeInfo)
+            )
+            // update bbox
+            container->updateBBox
+          | _ => ()
           }
         },
       //
       clearContainer: container => {
-        let nodeType = container->Dom.nodeType
-        if nodeType == Dom.NodeType.element {
-          container->Dom.setTextContent("")
-        } else if nodeType == Dom.NodeType.document {
-          Dom.Document.getBody->Js.toOption->Belt.Option.forEach(doc => doc->Dom.setTextContent(""))
-        }
+        container
+        ->Dom.firstChild
+        ->Js.toOption
+        ->Belt.Option.forEach(canvas => {
+          canvas->Dom.setTextContent("")
+          let element = Diagram__Dom.Document.createElement("div")
+          element->setStyles(
+            Js.Dict.fromArray([
+              ("position", Js.Nullable.return("absolute")),
+              ("transformOrigin", Js.Nullable.return("0 0")),
+              ("pointerEvents", Js.Nullable.return("none")),
+              ("outline", Js.Nullable.return("1px dashed yellowgreen")),
+              ("width", Js.Nullable.return("0px")),
+              ("height", Js.Nullable.return("0px")),
+            ]),
+          )
+          canvas->Diagram__Dom.appendChild(element)
+        })
       },
     },
     [
       /* methods to exclude from debug */
       "shouldSetTextContent",
-      "getRootHostContext",
+      //      "getRootHostContext",
       "getChildHostContext",
     ],
   ),

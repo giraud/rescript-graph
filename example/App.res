@@ -25,7 +25,7 @@ let renderArray = (a, fn) => a->Belt.Array.map(fn)->React.array
 module App = {
   @react.component
   let make = () => {
-    let (initialNodes, initialEdges) = parse(sample2)
+    let (initialNodes, initialEdges) = parse(sample_one)
     let (commands, setCommands) = React.useState(() => None)
 
     let (id, setId) = React.useState(() => initialNodes->Belt.Array.length)
@@ -115,6 +115,7 @@ module App = {
             onClick={_ => selectNodes(source, target)}
           />
         )}
+        <Diagram.Map className="minimap" />
       </Diagram>
     </main>
   }

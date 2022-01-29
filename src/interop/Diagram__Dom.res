@@ -3,7 +3,7 @@ module NodeType = {
   let document = 9
 }
 
-type domRect = {width: float, height: float}
+type domRect = {width: float, height: float, top: float, left: float, bottom: float, right: float}
 
 module Document = {
   @val @scope("document")
@@ -41,7 +41,13 @@ module Window = {
 @get external parentNode: Dom.element => Js.nullable<Dom.element> = "parentNode"
 @get external nextSibling: Dom.element => Js.nullable<Dom.element> = "nextSibling"
 @get external children: Dom.element => array<Dom.element> = "children"
+@get external firstChild: Dom.element => Js.nullable<Dom.element> = "firstChild"
 @get external style: Dom.element => Js.Dict.t<'a> = "style"
+@get external offsetLeft: Dom.element => float = "offsetLeft"
+@get external offsetTop: Dom.element => float = "offsetTop"
+@get external dataset: Dom.element => Js.Dict.t<'a> = "dataset"
+
+let forFirstChild = (node, fn) => node->firstChild->Js.toOption->Belt.Option.forEach(fn)
 
 @set external setId: (Dom.element, string) => unit = "id"
 @set external setNodeValue: (Dom.element, string) => unit = "nodeValue"

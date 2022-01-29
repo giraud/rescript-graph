@@ -12,13 +12,20 @@ let render = (element, container, onCreation) => {
   let root = switch container->DataNodeReactRoot.detach->Js.toOption {
   | Some(node) => node
   | None =>
-    // Clear container
-    container
-    ->Diagram__Dom.children
-    ->Belt.Array.forEach(node => container->Diagram__Dom.removeChild(node))
+    // Clear canvas
+    container->Diagram__Dom.forFirstChild(canvas =>
+      canvas
+      ->Diagram__Dom.children
+      ->Belt.Array.forEach(node => container->Diagram__Dom.removeChild(node))
+    )
 
     let newRoot = Diagram__DOMReconciler.reconciler.createContainer(. container)
-    let transform = Diagram__Transform.t(~scale=1.)
+    let transform = Diagram__Transform.t(
+      ~origin=(0., 0.),
+      ~scale=1.,
+      ~tl=(9999., 9999.),
+      ~br=(0., 0.),
+    )
     let layout = Diagram__Layout.make()
 
     container->DataNodeReactRoot.attach(newRoot)
