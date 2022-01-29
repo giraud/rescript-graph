@@ -1,7 +1,11 @@
 {
     "name": "rescript-diagram",
     "version": "0.0.1",
-    "sources": ["src", "src/interop", "example"],
+    "sources": ["src", "src/interop",
+        {
+            "dir": "example",
+            "type": "dev"
+        }],
     "package-specs": {
         "module": "es6-global",
         "in-source": false
