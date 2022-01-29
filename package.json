@@ -1,5 +1,5 @@
 {
-    "name": "rescript-diagram",
+    "name": "àgiraud/rescript-react-diagram",
     "version": "0.0.1",
     "scripts": {
         "build": "rescript",
@@ -13,11 +13,11 @@
         "auto layout",
         "react"
     ],
-    "author": "",
+    "author": "Hervé Giraud",
     "license": "MIT",
     "dependencies": {
-        "@rescript/react": "^0.10.3",
-        "dagre": "^0.8.5",
+        "@rescript/react": "^0.10.0",
+        "dagre": "^0.8.0",
         "react": "^17.0.0",
         "react-dom": "^17.0.0",
         "react-reconciler": "^0.26.0"
