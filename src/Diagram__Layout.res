@@ -1,10 +1,12 @@
 type t = {
   engine: ref<Diagram__Dagre.t>,
-  count: ref<int>,
-  processed: ref<int>,
+  displayBBox: ref<bool>,
 }
 
-let setNode = (layout, id, width, height) => {
+let displayBBox = layout => layout.displayBBox.contents
+let setDisplayBBox = (layout, value) => layout.displayBBox.contents = value
+
+let setNode = (layout, id, width, height) =>
   layout.engine.contents->Diagram__Dagre.setNode(
     id,
     {
@@ -13,25 +15,12 @@ let setNode = (layout, id, width, height) => {
       "height": height,
     },
   )
-  layout.processed := layout.processed.contents + 1
-}
 
-let setEdge = (layout, source, target) => {
+let setEdge = (layout, source, target) =>
   layout.engine.contents->Diagram__Dagre.setEdge({
     "v": source,
     "w": target,
   })
-  layout.processed := layout.processed.contents + 1
-}
-
-let incrementCount = (layout, elementType) =>
-  switch elementType {
-  | "Node" => layout.count := layout.count.contents + 1
-  | "Edge" => layout.count := layout.count.contents + 1
-  | _ => ()
-  }
-
-let allNodesProcessed = _layout => true // apply every time layout.processed.contents == layout.count.contents
 
 let processNodes = (layout, fn) =>
   layout.engine.contents
@@ -204,8 +193,7 @@ let make = () => {
 
   {
     engine: ref(engine),
-    count: ref(0),
-    processed: ref(0),
+    displayBBox: ref(false),
   }
 }
 

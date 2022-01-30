@@ -96,6 +96,7 @@ module App = {
         className="diagram"
         width="100%"
         height="100%"
+        boundingBox={true}
         onCreation={commands => setCommands(_ => Some(commands))}>
         {nodes->renderArray(nodeId =>
           <Diagram.Node

@@ -32,7 +32,7 @@ let render = (element, container, onCreation) => {
     container->Diagram__Transform.attach(transform)
     container->Diagram__Layout.attach(layout)
 
-    onCreation(transform)
+    onCreation(transform, layout)
 
     newRoot
   }

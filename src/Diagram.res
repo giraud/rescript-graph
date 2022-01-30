@@ -50,13 +50,14 @@ let make = (
   ~className=?,
   ~minScale=0.1,
   ~maxScale=1.5,
+  ~boundingBox=false,
   ~onCreation=?,
   ~children,
 ) => {
   let diagramNode = React.useRef(None)
   let canvasNode = React.useRef(None)
-  let boxNode = React.useRef(None)
   let slidingEnabled = React.useRef(false)
+  Js.log(boundingBox)
 
   let initRender = domNode => {
     diagramNode.current = domNode->Js.toOption
@@ -64,13 +65,13 @@ let make = (
     | Some(container) =>
       open Belt.Option
       canvasNode.current = container->Diagram__Dom.firstChild->Js.toOption
-      Diagram__DOMRenderer.render(children, container, t => {
+      Diagram__DOMRenderer.render(children, container, (t, l) => {
         let reset = () => {
           t->Diagram__Transform.originSet((0., 0.))
           t->Diagram__Transform.scaleSet(1.)
           canvasNode.current->forEach(canvas => canvas->Diagram__Dom.setTransform(0., 0., 1.))
-          boxNode.current->forEach(box => box->Diagram__Dom.setTransform(0., 0., 1.))
         }
+        l->Diagram__Layout.setDisplayBBox(boundingBox)
         onCreation->forEach(fn => fn(Diagram__DOMRenderer.Commands.make(reset)))
       })
     | None => ()
@@ -101,7 +102,6 @@ let make = (
         transform->Diagram__Transform.originSet((x', y'))
 
         canvas->Diagram__Dom.setTransform(x', y', scale)
-        boxNode.current->Belt.Option.forEach(box => box->Diagram__Dom.setTransform(x', y', scale))
       | _ => ()
       }
     }
@@ -136,7 +136,6 @@ let make = (
       transform->Diagram__Transform.scaleSet(scale'')
 
       canvas->Diagram__Dom.setTransform(x'', y'', scale'')
-      boxNode.current->Belt.Option.forEach(box => box->Diagram__Dom.setTransform(x'', y'', scale''))
     | _ => ()
     }
 

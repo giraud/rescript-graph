@@ -104,17 +104,14 @@ let reconciler = Diagram__ReactFiberReconciler.make(
       prepareForCommit: _ => Js.Nullable.null,
       resetAfterCommit: _ => (),
       //
-      createInstance: (elementType, props, rootContainer, _context, _internalHandle) => {
+      createInstance: (elementType, props, _rootContainer, _context, _internalHandle) => {
         let element = switch elementType {
-        | "Node" =>
-          rootContainer->Diagram__Layout.get->Diagram__Layout.incrementCount(elementType)
-          createNode(props->Js.Dict.get("nodeId")->Belt.Option.getWithDefault("nodeId"))
+        | "Node" => createNode(props->Js.Dict.get("nodeId")->Belt.Option.getWithDefault("nodeId"))
         | "Edge" =>
           let id =
             props->Js.Dict.get("source")->Belt.Option.getWithDefault("source") ++
             "-" ++
             props->Js.Dict.get("target")->Belt.Option.getWithDefault("target")
-          rootContainer->Diagram__Layout.get->Diagram__Layout.incrementCount(elementType)
           createEdge(id, props->Js.Dict.get("label")->Belt.Option.getWithDefault(""))
         | "Map" => createMap()
         | _ => Dom.Document.createElement(elementType)
@@ -346,12 +343,13 @@ let reconciler = Diagram__ReactFiberReconciler.make(
           }
         },
       //
-      clearContainer: container => {
-        container
+      clearContainer: rootContainer => {
+        rootContainer
         ->Dom.firstChild
         ->Js.toOption
         ->Belt.Option.forEach(canvas => {
           canvas->Dom.setTextContent("")
+          //          if rootContainer->Diagram__Layout.get->Diagram__Layout.displayBBox {
           let element = Diagram__Dom.Document.createElement("div")
           element->setStyles(
             Js.Dict.fromArray([
@@ -361,9 +359,18 @@ let reconciler = Diagram__ReactFiberReconciler.make(
               ("outline", Js.Nullable.return("1px dashed yellowgreen")),
               ("width", Js.Nullable.return("0px")),
               ("height", Js.Nullable.return("0px")),
+              (
+                "display",
+                Js.Nullable.return(
+                  rootContainer->Diagram__Layout.get->Diagram__Layout.displayBBox
+                    ? "block"
+                    : "none",
+                ),
+              ),
             ]),
           )
           canvas->Diagram__Dom.appendChild(element)
+          //          }
         })
       },
     },
