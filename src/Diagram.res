@@ -57,7 +57,6 @@ let make = (
   let diagramNode = React.useRef(None)
   let canvasNode = React.useRef(None)
   let slidingEnabled = React.useRef(false)
-  Js.log(boundingBox)
 
   let initRender = domNode => {
     diagramNode.current = domNode->Js.toOption
@@ -67,8 +66,7 @@ let make = (
       canvasNode.current = container->Diagram__Dom.firstChild->Js.toOption
       Diagram__DOMRenderer.render(children, container, (t, l) => {
         let reset = () => {
-          t->Diagram__Transform.originSet((0., 0.))
-          t->Diagram__Transform.scaleSet(1.)
+          t->Diagram__Transform.reset
           canvasNode.current->forEach(canvas => canvas->Diagram__Dom.setTransform(0., 0., 1.))
         }
         l->Diagram__Layout.setDisplayBBox(boundingBox)
@@ -94,13 +92,13 @@ let make = (
       | (Some(container), Some(canvas)) =>
         let transform = container->Diagram__Transform.get
 
-        let (x, y) = transform->Diagram__Transform.originGet
-        let scale = transform->Diagram__Transform.scaleGet
+        let (x, y) = transform->Diagram__Transform.origin
+        let scale = transform->Diagram__Transform.scale
 
         let x' = x +. Js.Int.toFloat(e->ReactEvent.Mouse.movementX)
         let y' = y +. Js.Int.toFloat(e->ReactEvent.Mouse.movementY)
-        transform->Diagram__Transform.originSet((x', y'))
 
+        transform->Diagram__Transform.update((x', y'), scale)
         canvas->Diagram__Dom.setTransform(x', y', scale)
       | _ => ()
       }
@@ -117,8 +115,8 @@ let make = (
     switch (diagramNode.current, canvasNode.current) {
     | (Some(container), Some(canvas)) =>
       let transform = container->Diagram__Transform.get
-      let (x, y) = transform->Diagram__Transform.originGet
-      let scale = transform->Diagram__Transform.scaleGet
+      let (x, y) = transform->Diagram__Transform.origin
+      let scale = transform->Diagram__Transform.scale
 
       let pointerX = e->Diagram__Dom.clientX
       let pointerY = e->Diagram__Dom.clientY
@@ -132,9 +130,7 @@ let make = (
       let x'' = pointerX -. x' *. scale''
       let y'' = pointerY -. y' *. scale''
 
-      transform->Diagram__Transform.originSet((x'', y''))
-      transform->Diagram__Transform.scaleSet(scale'')
-
+      transform->Diagram__Transform.update((x'', y''), scale'')
       canvas->Diagram__Dom.setTransform(x'', y'', scale'')
     | _ => ()
     }

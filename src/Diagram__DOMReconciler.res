@@ -19,7 +19,7 @@ let getRootContainer = instance => {
 let updateBBox = rootContainer =>
   rootContainer->Dom.forFirstChild(canvasNode =>
     canvasNode->Dom.forFirstChild(boxNode => {
-      let (width, height) = rootContainer->Diagram__Transform.get->Diagram__Transform.bbox
+      let (width, height) = rootContainer->Diagram__Transform.get->Diagram__Transform.toPixels
       boxNode->Dom.style->Js.Dict.set("width", width)
       boxNode->Dom.style->Js.Dict.set("height", height)
     })
@@ -95,7 +95,7 @@ let shallowDiff = (oldObj, newObj) => {
 }
 
 let reconciler = Diagram__ReactFiberReconciler.make(
-  debugMethods(
+  noDebugMethods(
     {
       isPrimaryRenderer: false,
       supportsMutation: true,
@@ -258,7 +258,7 @@ let reconciler = Diagram__ReactFiberReconciler.make(
             | None => ()
             | Some(id) =>
               let rect = Dom.getBoundingClientRect(domElement)
-              let scale = container->Diagram__Transform.get->Diagram__Transform.scaleGet
+              let scale = container->Diagram__Transform.get->Diagram__Transform.scale
               container
               ->Diagram__Layout.get
               ->Diagram__Layout.setNode(id, rect.width /. scale, rect.height /. scale)
@@ -314,7 +314,7 @@ let reconciler = Diagram__ReactFiberReconciler.make(
             | None => ()
             | Some(id) =>
               let rect = Dom.getBoundingClientRect(domElement)
-              let scale = container->Diagram__Transform.get->Diagram__Transform.scaleGet
+              let scale = container->Diagram__Transform.get->Diagram__Transform.scale
               layout->setNode(id, rect.width /. scale, rect.height /. scale)
             }
           | "Edge" =>

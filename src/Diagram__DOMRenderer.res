@@ -20,12 +20,7 @@ let render = (element, container, onCreation) => {
     )
 
     let newRoot = Diagram__DOMReconciler.reconciler.createContainer(. container)
-    let transform = Diagram__Transform.t(
-      ~origin=(0., 0.),
-      ~scale=1.,
-      ~tl=(9999., 9999.),
-      ~br=(0., 0.),
-    )
+    let transform = Diagram__Transform.make()
     let layout = Diagram__Layout.make()
 
     container->DataNodeReactRoot.attach(newRoot)
