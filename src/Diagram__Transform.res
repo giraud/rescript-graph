@@ -52,6 +52,12 @@ let toPixels = transform => {
   )
 }
 
+let getBBox = transform => {
+  let (left, top) = transform.tl
+  let (right, bottom) = transform.br
+  (Js.Math.max_float(0., right -. left), Js.Math.max_float(0., bottom -. top))
+}
+
 let make = () => {
   origin: (0., 0.),
   scale: 1.,

@@ -16,15 +16,6 @@ let getRootContainer = instance => {
   parentNode->Belt.Option.flatMap(node => node->Dom.parentNode->Js.toOption)
 }
 
-let updateBBox = rootContainer =>
-  rootContainer->Dom.forFirstChild(canvasNode =>
-    canvasNode->Dom.forFirstChild(boxNode => {
-      let (width, height) = rootContainer->Diagram__Transform.get->Diagram__Transform.toPixels
-      boxNode->Dom.style->Js.Dict.set("width", width)
-      boxNode->Dom.style->Js.Dict.set("height", height)
-    })
-  )
-
 let isEventName = name =>
   name->Js.String2.startsWith("on") && Dom.Window.hasOwnProperty(name->Js.String2.toLowerCase)
 
@@ -92,6 +83,34 @@ let shallowDiff = (oldObj, newObj) => {
   uniqueKeys
   ->Belt.Set.String.toArray
   ->Belt.Array.keep(name => oldObj->Js.Dict.unsafeGet(name) !== newObj->Js.Dict.unsafeGet(name))
+}
+
+let updateBBox = rootContainer =>
+  rootContainer->Dom.forFirstChild(canvasNode =>
+    canvasNode->Dom.forFirstChild(boxNode => {
+      let (width, height) = rootContainer->Diagram__Transform.get->Diagram__Transform.toPixels
+      boxNode->Dom.style->Js.Dict.set("width", width)
+      boxNode->Dom.style->Js.Dict.set("height", height)
+    })
+  )
+
+let runLayout = rootContainer => {
+  let layout = rootContainer->Diagram__Layout.get
+  let transform = rootContainer->Diagram__Transform.get
+
+  // compute a new layout
+  layout->Diagram__Layout.run(rootContainer)
+
+  // compute diagram boundingBox
+  transform->Diagram__Transform.resetBBox
+  layout->Diagram__Layout.processNodes((_, nodeInfo) =>
+    transform->Diagram__Transform.computeBBox(nodeInfo)
+  )
+  // update DOM
+  rootContainer->updateBBox
+
+  // Callback onLayoutUpdate
+  layout->Diagram__Layout.onUpdate // ?? add/position node/edge
 }
 
 let reconciler = Diagram__ReactFiberReconciler.make(
@@ -275,19 +294,7 @@ let reconciler = Diagram__ReactFiberReconciler.make(
           switch elementType {
           | "Node"
           | "Edge" =>
-            let layout = container->Diagram__Layout.get
-            let transform = container->Diagram__Transform.get
-            // compute a new layout
-            layout->Diagram__Layout.run(container)
-            // compute bbox
-            transform->Diagram__Transform.resetBBox
-            container
-            ->Diagram__Layout.get
-            ->Diagram__Layout.processNodes((_, nodeInfo) =>
-              transform->Diagram__Transform.computeBBox(nodeInfo)
-            )
-            // update bbox
-            container->updateBBox
+            runLayout(container)
           | _ => ()
           }
         }
@@ -328,17 +335,7 @@ let reconciler = Diagram__ReactFiberReconciler.make(
           switch elementType {
           | "Node"
           | "Edge" =>
-            let layout = container->Diagram__Layout.get
-            let transform = container->Diagram__Transform.get
-            // compute a new layout
-            layout->Diagram__Layout.run(container)
-            // compute bbox
-            transform->Diagram__Transform.resetBBox
-            layout->Diagram__Layout.processNodes((_, nodeInfo) =>
-              transform->Diagram__Transform.computeBBox(nodeInfo)
-            )
-            // update bbox
-            container->updateBBox
+            runLayout(container)
           | _ => ()
           }
         },

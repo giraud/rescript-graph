@@ -11,6 +11,8 @@ let processEdges: (t, (string, Diagram__Dagre.edgeInfo) => unit) => unit
 
 let run: (t, Dom.element) => unit
 let reset: t => unit
+let registerListener: (t, unit => unit) => unit
+let onUpdate: t => unit
 
 let make: unit => t
 

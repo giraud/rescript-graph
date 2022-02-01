@@ -9,6 +9,7 @@ let reset: t => unit
 let resetBBox: t => unit
 let computeBBox: (t, Diagram__Dagre.nodeInfo) => unit
 let toPixels: t => (string, string)
+let getBBox: t => (float, float) // ???
 
 let make: unit => t
 

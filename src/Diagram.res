@@ -52,11 +52,23 @@ let make = (
   ~maxScale=1.5,
   ~boundingBox=false,
   ~onCreation=?,
+  ~onLayoutUpdate=?,
   ~children,
 ) => {
   let diagramNode = React.useRef(None)
   let canvasNode = React.useRef(None)
   let slidingEnabled = React.useRef(false)
+
+  React.useEffect1(() => {
+    switch diagramNode.current {
+    | Some(container) =>
+      container
+      ->Diagram__Layout.get
+      ->Diagram__Layout.registerListener(onLayoutUpdate->Belt.Option.getWithDefault(() => ()))
+    | None => ()
+    }
+    None
+  }, [onLayoutUpdate])
 
   let initRender = domNode => {
     diagramNode.current = domNode->Js.toOption
@@ -65,12 +77,40 @@ let make = (
       open Belt.Option
       canvasNode.current = container->Diagram__Dom.firstChild->Js.toOption
       Diagram__DOMRenderer.render(children, container, (t, l) => {
-        let reset = () => {
-          t->Diagram__Transform.reset
-          canvasNode.current->forEach(canvas => canvas->Diagram__Dom.setTransform(0., 0., 1.))
+        let update = (changeScale, center, ()) => {
+          // compute center
+          let (x, y, scale) = if center {
+            let (canvasWidth, canvasHeight) = t->Diagram__Transform.getBBox
+            if canvasWidth > 0. && canvasHeight > 0. {
+              let {width: containerWidth, height: containerHeight} =
+                container->Diagram__Dom.getBoundingClientRect
+              // change scale if wanted
+              let scale = if changeScale {
+                let realScale =
+                  0.98 /.
+                  Js.Math.max_float(canvasWidth /. containerWidth, canvasHeight /. containerHeight)
+                Js.Math.min_float(1.0, Js.Math.max_float(minScale, realScale))
+              } else {
+                t->Diagram__Transform.scale
+              }
+
+              let x = containerWidth /. 2. -. scale *. (canvasWidth /. 2.)
+              let y = containerHeight /. 2. -. scale *. (canvasHeight /. 2.)
+              (x, y, scale)
+            } else {
+              (0., 0., 1.)
+            }
+          } else {
+            (0., 0., 1.)
+          }
+
+          t->Diagram__Transform.update((x, y), scale)
+          canvasNode.current->forEach(canvas => canvas->Diagram__Dom.setTransform(x, y, scale))
         }
         l->Diagram__Layout.setDisplayBBox(boundingBox)
-        onCreation->forEach(fn => fn(Diagram__DOMRenderer.Commands.make(reset)))
+        onCreation->forEach(fn =>
+          fn(Diagram__DOMRenderer.Commands.make(update(true, false), update(true, true)))
+        )
       })
     | None => ()
     }

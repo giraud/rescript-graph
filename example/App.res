@@ -34,19 +34,29 @@ module App = {
     let (nodes, setNodes) = React.useState(() => initialNodes)
     let (edges, setEdges) = React.useState(() => initialEdges)
 
-    let reset = _ =>
+    let reset = () =>
       switch commands {
       | None => ()
       | Some(c) => c.Diagram.Commands.reset()
       }
 
-    let clear = e => {
+    let fitToView = () =>
+      switch commands {
+      | None =>
+        Js.log("fit iii")
+        ()
+      | Some(c) =>
+        Js.log("fit command")
+        c.Diagram.Commands.fitToView()
+      }
+
+    let clear = _e => {
       setId(_ => 0)
       setStart(_ => "")
       setEnd(_ => "")
       setNodes(_ => [])
       setEdges(_ => [])
-      reset(e)
+      reset()
     }
 
     let addNode = _ => {
@@ -89,7 +99,8 @@ module App = {
           {"Add edge"->React.string}
         </button>
         <button onClick={clear}> {"Clear"->React.string} </button>
-        <button onClick={reset}> {"Reset"->React.string} </button>
+        <button onClick={_ => reset()}> {"Reset"->React.string} </button>
+        <button onClick={_ => fitToView()}> {"Fit to view"->React.string} </button>
         <a href="https://github.com/giraud/rescript-diagram"> {"Github"->React.string} </a>
       </div>
       <Diagram
@@ -97,7 +108,8 @@ module App = {
         width="100%"
         height="100%"
         boundingBox={true}
-        onCreation={commands => setCommands(_ => Some(commands))}>
+        onCreation={commands => setCommands(_ => Some(commands))}
+        onLayoutUpdate={fitToView}>
         {nodes->renderArray(nodeId =>
           <Diagram.Node
             key={nodeId}

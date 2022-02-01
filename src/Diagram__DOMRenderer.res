@@ -4,8 +4,12 @@ module DataNodeReactRoot = {
 }
 
 module Commands = {
-  type t = {reset: unit => unit}
-  let make: (unit => unit) => t = reset => {reset: reset}
+  type t = {reset: unit => unit, fitToView: unit => unit}
+
+  let make = (resetFn, fitToViewFn) => {
+    reset: resetFn,
+    fitToView: fitToViewFn,
+  }
 }
 
 let render = (element, container, onCreation) => {

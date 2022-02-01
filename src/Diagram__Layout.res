@@ -1,5 +1,6 @@
 type t = {
   engine: ref<Diagram__Dagre.t>,
+  mutable listener: unit => unit,
   displayBBox: ref<bool>,
 }
 
@@ -186,6 +187,9 @@ let reset = layout => {
   layout.engine := engine
 }
 
+let registerListener = (layout, listener) => layout.listener = listener
+let onUpdate = layout => layout.listener()
+
 let make = () => {
   let engine = Diagram__Dagre.make()
   engine->Diagram__Dagre.setGraph(Js.Obj.empty())
@@ -193,6 +197,7 @@ let make = () => {
 
   {
     engine: ref(engine),
+    listener: () => (),
     displayBBox: ref(false),
   }
 }
