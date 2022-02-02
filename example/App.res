@@ -42,12 +42,8 @@ module App = {
 
     let fitToView = () =>
       switch commands {
-      | None =>
-        Js.log("fit iii")
-        ()
-      | Some(c) =>
-        Js.log("fit command")
-        c.Diagram.Commands.fitToView()
+      | None => ()
+      | Some(c) => c.Diagram.Commands.fitToView()
       }
 
     let clear = _e => {
@@ -128,7 +124,7 @@ module App = {
             onClick={_ => selectNodes(source, target)}
           />
         )}
-        <Diagram.Map className="minimap" />
+        // <Diagram.Map className="minimap" />
       </Diagram>
     </main>
   }
