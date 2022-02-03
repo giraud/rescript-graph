@@ -73,6 +73,7 @@ let setTransform = (node, x, y, scale) =>
   )
 
 @get external mouseEventTarget: ReactEvent.Mouse.t => Dom.element = "target"
+@get external mouseEventButton: ReactEvent.Mouse.t => int = "button"
 @get external mousePointerId: ReactEvent.Mouse.t => string = "pointerId"
 @get external clientX: ReactEvent.Wheel.t => float = "clientX"
 @get external clientY: ReactEvent.Wheel.t => float = "clientY"

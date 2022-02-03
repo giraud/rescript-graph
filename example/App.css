@@ -50,8 +50,12 @@ main {
     color: var(--color-text)
 }
 
-.diagram {
-    cursor: move;
+.info {
+    position: absolute;
+    top: 50px;
+    right: 10px;
+    color: var(--color-text);
+    opacity: 0.8;
 }
 
 .diagram div[data-map] {

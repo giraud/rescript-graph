@@ -126,6 +126,9 @@ module App = {
         )}
         // <Diagram.Map className="minimap" />
       </Diagram>
+      <div className="info">
+        {"Use middle mouse button to drag, mouse wheel to zoom"->React.string}
+      </div>
     </main>
   }
 }

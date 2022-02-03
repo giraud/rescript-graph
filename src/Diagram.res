@@ -119,10 +119,14 @@ let make = (
 
   let beginSliding = (. e) =>
     switch diagramNode.current {
-    | Some(node) if e->Diagram__Dom.mouseEventTarget == node =>
+    | Some(node)
+      if e->Diagram__Dom.mouseEventTarget == node &&
+        e->Diagram__Dom.mouseEventButton == 1 /* middle/wheel */ =>
       e
       ->Diagram__Dom.mouseEventTarget
       ->Diagram__Dom.setPointerCapture(e->Diagram__Dom.mousePointerId)
+
+      node->Diagram__Dom.style->Js.Dict.set("cursor", "move")
       slidingEnabled.current = true
     | _ => ()
     }
@@ -145,12 +149,17 @@ let make = (
       }
     }
 
-  let stopSliding = (. e) => {
-    slidingEnabled.current = false
-    e
-    ->Diagram__Dom.mouseEventTarget
-    ->Diagram__Dom.releasePointerCapture(e->Diagram__Dom.mousePointerId)
-  }
+  let stopSliding = (. e) =>
+    switch diagramNode.current {
+    | Some(node) =>
+      slidingEnabled.current = false
+      node->Diagram__Dom.style->Js.Dict.set("cursor", "initial")
+
+      e
+      ->Diagram__Dom.mouseEventTarget
+      ->Diagram__Dom.releasePointerCapture(e->Diagram__Dom.mousePointerId)
+    | None => ()
+    }
 
   let zoom = e =>
     switch (diagramNode.current, canvasNode.current) {
