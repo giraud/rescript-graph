@@ -58,6 +58,17 @@ main {
     opacity: 0.8;
 }
 
+/* gps */
+.diagram > svg > polygon {
+    fill: var(--color-border)
+}
+
+.diagram > svg > circle {
+    stroke: var(--color-border);
+    stroke-dasharray: 3.45;
+    stroke-width: 1.5;
+}
+
 .diagram div[data-map] {
     width: 100px;
     height: 100px;

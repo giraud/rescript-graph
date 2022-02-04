@@ -145,6 +145,46 @@ let make = (
 
         transform->Diagram__Transform.update((x', y'), scale)
         canvas->Diagram__Dom.setTransform(x', y', scale)
+
+        let {width, height} = container->Diagram__Dom.getBoundingClientRect
+        let ccx = width /. 2.
+        let ccy = height /. 2.
+
+        let (bboxWidth, bboxHeight) = transform->Diagram__Transform.getBBox
+
+        let bbwh = bboxWidth *. scale /. 2.
+        let bbhh = bboxHeight *. scale /. 2.
+        let bbcx = x' +. bbwh // bbox center x
+        let bbcy = y' +. bbhh // bbox center y
+
+        let displayGps =
+          bbcy +. bbhh < 0. || bbcx +. bbwh < 0. || bbcx -. bbwh > width || bbcy -. bbhh > height
+
+        container
+        ->Diagram__Dom.lastChild
+        ->Js.toOption
+        ->Belt.Option.forEach(gps => {
+          gps->Diagram__Dom.style->Js.Dict.set("display", displayGps ? "block" : "none")
+          gps->Diagram__Dom.setTranslate3d(ccx -. 25., ccy -. 25.)
+          // arrow
+          switch gps->Diagram__Dom.lastChild->Js.toOption {
+          | Some(arrow) if displayGps =>
+            let (vnx, vny) = Diagram__Graphics.normalizeVector(bbcx -. ccx, bbcy -. ccy)
+            let vx = 25. *. vnx
+            let vy = 25. *. vny
+
+            let arrowPoints = Diagram__Graphics.createArrowPoints(
+              25. +. vx,
+              25. +. vy,
+              25. +. bbcx -. ccx,
+              25. +. bbcy -. ccy,
+              false,
+            )
+            arrow->Diagram__Dom.setAttribute("points", arrowPoints)
+          | _ => ()
+          }
+        })
+
       | _ => ()
       }
     }
@@ -154,7 +194,10 @@ let make = (
     | Some(node) =>
       slidingEnabled.current = false
       node->Diagram__Dom.style->Js.Dict.set("cursor", "initial")
-
+      node
+      ->Diagram__Dom.lastChild
+      ->Js.toOption
+      ->Belt.Option.forEach(n => n->Diagram__Dom.style->Js.Dict.set("display", "none"))
       e
       ->Diagram__Dom.mouseEventTarget
       ->Diagram__Dom.releasePointerCapture(e->Diagram__Dom.mousePointerId)
@@ -192,6 +235,14 @@ let make = (
       style={ReactDOM.Style.make(~width, ~height, ~position="relative", ~overflow="hidden", ())}
       onWheel={zoom}>
       <div style={ReactDOM.Style.make(~position="relative", ~transformOrigin="0 0", ())} />
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 50 50"
+        width="50px"
+        height="50px"
+        style={ReactDOM.Style.make(~pointerEvents="none", ~display="none", ())}>
+        <circle cx="25" cy="25" r="12" fill="none" /> <polygon />
+      </svg>
     </div>
   </WithPointerEvents>
 }

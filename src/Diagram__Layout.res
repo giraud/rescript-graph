@@ -60,50 +60,6 @@ let queryNode = (container, id) =>
 let queryEdge = (container, id) =>
   container->Diagram__Dom.querySelectorAll("[data-edge='" ++ id ++ "']")->Belt.Array.get(0)
 
-let computeAngle = (x1, y1, x2, y2) => {
-  // translate vector to 0
-  let xt = x2 -. x1
-  let yt = y2 -. y1
-  // normalize vector
-  let magnitude = Js.Math.sqrt(xt *. xt +. yt *. yt)
-  let xn = xt /. magnitude
-  let yn = 1. *. yt /. magnitude
-  // compute angle
-  Js.Math.atan2(~x=xn, ~y=yn, ())
-}
-
-// x2, y2 is the end path, head of arrow
-let createArrowPoints = (x1, y1, x2, y2) => {
-  // angle
-  let radAngle = computeAngle(x1, y1, x2, y2)
-  let c = Js.Math.cos(radAngle)
-  let s = Js.Math.sin(radAngle)
-
-  let ax1 = x2
-  let ay1 = y2
-  let ax2 = -8. *. c -. 4. *. s
-  let ay2 = -8. *. s +. 4. *. c
-  let ax3 = -8. *. c +. 4. *. s
-  let ay3 = -8. *. s -. 4. *. c
-
-  Js.Float.toString(ax1) ++
-  "," ++
-  Js.Float.toString(ay1) ++
-  " " ++
-  Js.Float.toString(ax2 +. x2) ++
-  "," ++
-  Js.Float.toString(ay2 +. y2) ++
-  " " ++
-  Js.Float.toString(ax3 +. x2) ++
-  "," ++
-  Js.Float.toString(ay3 +. y2)
-}
-
-let buildPath = (x, y, points) =>
-  points->Belt.Array.reduce("M", (acc, p: Diagram__Dagre.point) =>
-    acc ++ Js.Float.toString(p.x -. x) ++ "," ++ Js.Float.toString(p.y -. y) ++ " "
-  )
-
 let run = (layout, container) => {
   // Compute positions
   Diagram__Dagre.layout(layout.engine.contents)
@@ -149,7 +105,7 @@ let run = (layout, container) => {
         let minY' = minY -. 5.
 
         // update connector
-        path->Dom.setAttribute("d", buildPath(minX', minY', points))
+        path->Dom.setAttribute("d", Diagram__Graphics.buildPath(minX', minY', points))
         // update start circle
         switch points->Belt.Array.get(0) {
         | None => ()
@@ -161,7 +117,13 @@ let run = (layout, container) => {
         let pointsCount = points->Belt.Array.length
         switch (points->Belt.Array.get(pointsCount - 2), points->Belt.Array.get(pointsCount - 1)) {
         | (Some({x, y}), Some({x: x1, y: y1})) =>
-          let arrowPolygon = createArrowPoints(x -. minX', y -. minY', x1 -. minX', y1 -. minY')
+          let arrowPolygon = Diagram__Graphics.createArrowPoints(
+            x -. minX',
+            y -. minY',
+            x1 -. minX',
+            y1 -. minY',
+            true,
+          )
           arrow->Dom.setAttribute("points", arrowPolygon)
 
           // update text label
