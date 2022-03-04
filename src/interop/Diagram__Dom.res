@@ -79,3 +79,5 @@ let setTransform = (node, x, y, scale) =>
 @get external mousePointerId: ReactEvent.Mouse.t => string = "pointerId"
 @get external clientX: ReactEvent.Wheel.t => float = "clientX"
 @get external clientY: ReactEvent.Wheel.t => float = "clientY"
+@get external mclientX: ReactEvent.Mouse.t => float = "clientX"
+@get external mclientY: ReactEvent.Mouse.t => float = "clientY"

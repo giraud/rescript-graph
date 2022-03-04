@@ -59,6 +59,8 @@ let make = (
   let diagramNode = React.useRef(None)
   let canvasNode = React.useRef(None)
   let slidingEnabled = React.useRef(false)
+  let selectingEnabled = React.useRef(false)
+  let selectionBox = React.useRef(None)
 
   React.useEffect1(() => {
     switch diagramNode.current {
@@ -124,21 +126,34 @@ let make = (
     }
   }
 
-  let beginSliding = (. e) =>
+  let pointerDown = (. e) => {
+    open Diagram__Dom
     switch diagramNode.current {
-    | Some(node)
-      if e->Diagram__Dom.mouseEventTarget == node &&
-        e->Diagram__Dom.mouseEventButton == 1 /* middle/wheel */ =>
-      e
-      ->Diagram__Dom.mouseEventTarget
-      ->Diagram__Dom.setPointerCapture(e->Diagram__Dom.mousePointerId)
-
-      node->Diagram__Dom.style->Js.Dict.set("cursor", "move")
+    | Some(node) if e->mouseEventTarget == node && e->mouseEventButton == 1 /* middle/wheel */ =>
+      // Drag start
+      e->mouseEventTarget->setPointerCapture(e->mousePointerId)
+      node->style->Js.Dict.set("cursor", "move")
       slidingEnabled.current = true
+    | Some(node) if e->mouseEventTarget == node && e->mouseEventButton == 0 /* left */ =>
+      // Select start
+      e->mouseEventTarget->setPointerCapture(e->mousePointerId)
+      let box = Document.createElement("div")
+      box->setAttribute(
+        "style",
+        "position:absolute;background-color:white;opacity:0.15;border:1px dashed black",
+      )
+      node->appendChild(box)
+      selectingEnabled.current = true
+      selectionBox.current = Some((
+        box,
+        e->mclientX -. node->offsetLeft,
+        e->mclientY -. node->offsetTop,
+      ))
     | _ => ()
     }
+  }
 
-  let slide = (. e) =>
+  let pointerMove = (. e) =>
     if slidingEnabled.current {
       switch (diagramNode.current, canvasNode.current) {
       | (Some(container), Some(canvas)) =>
@@ -191,25 +206,55 @@ let make = (
           | _ => ()
           }
         })
+      | _ => ()
+      }
+    } else if selectingEnabled.current {
+      switch (diagramNode.current, selectionBox.current) {
+      | (Some(node), Some((box, x, y))) =>
+        let x' = e->Diagram__Dom.mclientX -. node->Diagram__Dom.offsetLeft
+        let y' = e->Diagram__Dom.mclientY -. node->Diagram__Dom.offsetTop
+        let width = Js.Math.abs_float(x' -. x)
+        let height = Js.Math.abs_float(y' -. y)
+        box->Diagram__Dom.style->Js.Dict.set("width", Js.Float.toString(width) ++ "px")
+        box->Diagram__Dom.style->Js.Dict.set("height", Js.Float.toString(height) ++ "px")
 
+        switch (x' >= x, y' >= y) {
+        | (true, true) => box->Diagram__Dom.setTransform(x, y, 1.0)
+        | (true, false) => box->Diagram__Dom.setTransform(x, y -. height, 1.0)
+        | (false, true) => box->Diagram__Dom.setTransform(x -. width, y, 1.0)
+        | (false, false) => box->Diagram__Dom.setTransform(x -. width, y -. height, 1.0)
+        }
       | _ => ()
       }
     }
 
-  let stopSliding = (. e) =>
+  let pointerUp = (. e) => {
+    open Diagram__Dom
     switch diagramNode.current {
-    | Some(node) =>
+    | Some(node) if slidingEnabled.current =>
       slidingEnabled.current = false
-      node->Diagram__Dom.style->Js.Dict.set("cursor", "initial")
+      node->style->Js.Dict.set("cursor", "initial")
       node
-      ->Diagram__Dom.lastChild
+      ->lastChild
       ->Js.toOption
-      ->Belt.Option.forEach(n => n->Diagram__Dom.style->Js.Dict.set("display", "none"))
-      e
-      ->Diagram__Dom.mouseEventTarget
-      ->Diagram__Dom.releasePointerCapture(e->Diagram__Dom.mousePointerId)
-    | None => ()
+      ->Belt.Option.forEach(n => n->style->Js.Dict.set("display", "none"))
+      e->mouseEventTarget->releasePointerCapture(e->mousePointerId)
+    | Some(node) if selectingEnabled.current =>
+      switch selectionBox.current {
+      | Some((box, _, _)) =>
+        let canvasRect = node->Diagram__Dom.getBoundingClientRect
+        let boxRect = box->Diagram__Dom.getBoundingClientRect
+        Js.log2("ratio canvas", canvasRect.width /. canvasRect.height)
+        Js.log2("box canvas", boxRect.width /. boxRect.height)
+      | _ => ()
+      }
+
+      selectingEnabled.current = false
+      selectionBox.current->Belt.Option.forEach(((box, _, _)) => node->removeChild(box))
+      e->mouseEventTarget->releasePointerCapture(e->mousePointerId)
+    | _ => ()
     }
+  }
 
   let zoom = e =>
     switch (diagramNode.current, canvasNode.current) {
@@ -235,7 +280,7 @@ let make = (
     | _ => ()
     }
 
-  <WithPointerEvents onPointerDown=beginSliding onPointerUp=stopSliding onPointerMove=slide>
+  <WithPointerEvents onPointerDown=pointerDown onPointerUp=pointerUp onPointerMove=pointerMove>
     <div
       ref={ReactDOM.Ref.callbackDomRef(initRender)}
       ?className
