@@ -6,7 +6,7 @@ type point = {x: float, y: float}
 type edgeInfo = {points: array<point>}
 
 @send
-external setGraph: (t, Js.t<'a>) => unit = "setGraph"
+external setGraph: (t, Js.Dict.t<string>) => unit = "setGraph"
 @send
 external setDefaultEdgeLabel: (t, 'a => Js.t<'b>) => unit = "setDefaultEdgeLabel"
 @send

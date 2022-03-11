@@ -50,6 +50,7 @@ let make = (
   ~className=?,
   ~minScale=0.1,
   ~maxScale=1.5,
+  ~orientation: Diagram__Layout.orientation=#vertical,
   ~boundingBox=false,
   ~onCreation=?,
   ~onLayoutUpdate=?,
@@ -70,6 +71,11 @@ let make = (
     }
     None
   }, [onLayoutUpdate])
+
+  switch diagramNode.current {
+  | Some(container) => container->Diagram__Layout.get->Diagram__Layout.setOrientation(orientation)
+  | None => ()
+  }
 
   let initRender = domNode => {
     diagramNode.current = domNode->Js.toOption
@@ -109,6 +115,7 @@ let make = (
           canvasNode.current->forEach(canvas => canvas->Diagram__Dom.setTransform(x, y, scale))
         }
         l->Diagram__Layout.setDisplayBBox(boundingBox)
+        l->Diagram__Layout.setOrientation(orientation)
         onCreation->forEach(fn =>
           fn(Diagram__DOMRenderer.Commands.make(update(true, false), update(true, true)))
         )

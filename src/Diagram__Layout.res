@@ -1,11 +1,21 @@
+type orientation = [#vertical | #horizontal]
+
 type t = {
   engine: ref<Diagram__Dagre.t>,
   mutable listener: unit => unit,
   displayBBox: ref<bool>,
+  orientation: ref<orientation>,
 }
 
 let displayBBox = layout => layout.displayBBox.contents
 let setDisplayBBox = (layout, value) => layout.displayBBox.contents = value
+
+let setOrientation = (layout, value) => layout.orientation.contents = value
+let orientationToString = orientation =>
+  switch orientation {
+  | #horizontal => "LR"
+  | _ => "TB"
+  }
 
 let setNode = (layout, id, width, height) =>
   layout.engine.contents->Diagram__Dagre.setNode(
@@ -142,8 +152,9 @@ let run = (layout, container) => {
 
 let reset = layout => {
   let engine = Diagram__Dagre.make()
-
-  engine->Diagram__Dagre.setGraph(Js.Obj.empty())
+  engine->Diagram__Dagre.setGraph(
+    Js.Dict.fromArray([("rankdir", layout.orientation.contents->orientationToString)]),
+  )
   engine->Diagram__Dagre.setDefaultEdgeLabel(_ => Js.Obj.empty())
 
   layout.engine := engine
@@ -154,13 +165,14 @@ let onUpdate = layout => layout.listener()
 
 let make = () => {
   let engine = Diagram__Dagre.make()
-  engine->Diagram__Dagre.setGraph(Js.Obj.empty())
+  engine->Diagram__Dagre.setGraph(Js.Dict.fromArray([("rankdir", "TB")]))
   engine->Diagram__Dagre.setDefaultEdgeLabel(_ => Js.Obj.empty())
 
   {
     engine: ref(engine),
     listener: () => (),
     displayBBox: ref(false),
+    orientation: ref(#vertical),
   }
 }
 

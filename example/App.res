@@ -25,10 +25,11 @@ let renderArray = (a, fn) => a->Belt.Array.map(fn)->React.array
 module App = {
   @react.component
   let make = () => {
-    let (initialNodes, initialEdges) = parse(sample_one)
+    let (initialNodes, initialEdges) = parse(sample2)
     let (commands, setCommands) = React.useState(() => None)
 
     let (id, setId) = React.useState(() => initialNodes->Belt.Array.length)
+    let (orientation, setOrientation) = React.useState(() => #vertical)
     let (start, setStart) = React.useState(() => "")
     let (end, setEnd) = React.useState(() => "")
     let (nodes, setNodes) = React.useState(() => initialNodes)
@@ -45,6 +46,14 @@ module App = {
       | None => ()
       | Some(c) => c.Diagram.Commands.fitToView()
       }
+
+    let flip = () =>
+      setOrientation(prev =>
+        switch prev {
+        | #vertical => #horizontal
+        | _ => #vertical
+        }
+      )
 
     let clear = _e => {
       setId(_ => 0)
@@ -97,12 +106,14 @@ module App = {
         <button onClick={clear}> {"Clear"->React.string} </button>
         <button onClick={_ => reset()}> {"Reset"->React.string} </button>
         <button onClick={_ => fitToView()}> {"Fit to view"->React.string} </button>
+        <button onClick={_ => flip()}> {"Flip"->React.string} </button>
         <a href="https://github.com/giraud/rescript-diagram"> {"Github"->React.string} </a>
       </div>
       <Diagram
         className="diagram"
         width="100%"
         height="100%"
+        orientation
         boundingBox={true}
         onCreation={commands => setCommands(_ => Some(commands))}
         onLayoutUpdate={fitToView}>

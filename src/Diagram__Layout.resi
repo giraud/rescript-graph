@@ -1,7 +1,11 @@
 type t
 
+type orientation = [#vertical | #horizontal]
+
 let displayBBox: t => bool
 let setDisplayBBox: (t, bool) => unit
+
+let setOrientation: (t, orientation) => unit
 
 let setNode: (t, string, float, float) => unit
 let setEdge: (t, string, string) => unit
