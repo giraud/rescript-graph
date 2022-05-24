@@ -13,6 +13,7 @@ module Edge = {
   external make: (
     ~source: string,
     ~target: string,
+    ~className: string=?,
     ~label: string=?,
     ~onClick: ReactEvent.Mouse.t => unit=?,
   ) => React.element = "Edge"
