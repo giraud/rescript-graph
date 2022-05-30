@@ -131,7 +131,7 @@ module App = {
             key={source ++ "-" ++ target}
             source
             target
-            label="edge"
+            label={"edge from " ++ source ++ " to " ++ target}
             onClick={_ => selectNodes(source, target)}
           />
         )}

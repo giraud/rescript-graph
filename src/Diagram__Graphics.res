@@ -1,15 +1,22 @@
+@val @scope("Math")
+external pi: float = "PI"
+
 let normalizeVector = (x, y) => {
   let magnitude = Js.Math.sqrt(x *. x +. y *. y)
-  (x /. magnitude, 1. *. y /. magnitude)
+  magnitude == 0. ? (0., 0.) : (x /. magnitude, y /. magnitude)
+}
+
+let normalizePoints = (x1, y1, x2, y2) => {
+  // translate vector to 0
+  let xt = x2 -. x1
+  let yt = y2 -. y1
+  // normalize vector
+  normalizeVector(xt, yt)
 }
 
 let computeAngleFromVector = (x, y) => {
-  // normalize vector
-  let magnitude = Js.Math.sqrt(x *. x +. y *. y)
-  let xn = x /. magnitude
-  let yn = 1. *. y /. magnitude
-  // compute angle
-  Js.Math.atan2(~x=xn, ~y=yn, ())
+  let (xn, yn) = normalizeVector(x, y) // normalize vector
+  Js.Math.atan2(~x=xn, ~y=yn, ()) // compute angle
 }
 
 let computeAngleFromPoints = (x1, y1, x2, y2) => {

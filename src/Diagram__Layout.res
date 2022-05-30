@@ -27,11 +27,16 @@ let setNode = (layout, id, width, height) =>
     },
   )
 
-let setEdge = (layout, source, target) =>
-  layout.engine.contents->Diagram__Dagre.setEdge({
-    "v": source,
-    "w": target,
-  })
+let setEdge = (layout, source, target, width, height) =>
+  layout.engine.contents->Diagram__Dagre.setEdge(
+    source,
+    target,
+    {
+      "width": width,
+      "height": height,
+    },
+    "name-" ++ source ++ "-" ++ target,
+  )
 
 let processNodes = (layout, fn) =>
   layout.engine.contents
@@ -48,7 +53,9 @@ let processEdges = (layout, fn) =>
   ->Diagram__Dagre.edges
   ->Belt.Array.forEach(edge => {
     let id = edge.v ++ "-" ++ edge.w
-    switch layout.engine.contents->Diagram__Dagre.edge(edge.v, edge.w)->Js.toOption {
+    switch layout.engine.contents
+    ->Diagram__Dagre.namedEdge(edge.v, edge.w, edge.name)
+    ->Js.toOption {
     | None => Js.log("Can't find edge info for " ++ edge.v ++ " " ++ edge.w)
     | Some(edgeInfo) =>
       // fix pb in dagre where number can be NaN
@@ -91,9 +98,8 @@ let run = (layout, container) => {
     | None => ()
     | Some(domEdge) =>
       module Dom = Diagram__Dom
-
       switch domEdge->Dom.children {
-      | [path, start, arrow] =>
+      | [path, start, arrow /* , holder */] =>
         // adjust and move svg viewBox
         let (minX, maxX, minY, maxY) = points->Belt.Array.reduce((9999., 0., 9999., 0.), (
           (minX, maxX, minY, maxY),
@@ -136,10 +142,43 @@ let run = (layout, container) => {
           )
           arrow->Dom.setAttribute("points", arrowPolygon)
 
-          // update text label
-          switch (domEdge->Dom.nextSibling->Js.toOption, points->Belt.Array.get(1)) {
-          | (Some(textNode), Some({x, y})) =>
-            textNode->Dom.setTranslate3d(x +. 3., y -. 14. /* font-size?? */)
+          let midPoint = pointsCount / 2
+          switch (
+            points->Belt.Array.get(midPoint - 1),
+            points->Belt.Array.get(midPoint),
+            points->Belt.Array.get(midPoint + 1),
+          ) {
+          | (Some({x, y}), Some({x: x1, y: y1}), Some({x: x2, y: y2})) =>
+            // normalize vectors
+            let (norm1x, norm1y) = Diagram__Graphics.normalizePoints(x1, y1, x, y)
+            let (norm2x, norm2y) = Diagram__Graphics.normalizePoints(x1, y1, x2, y2)
+            // adding two unit vectors, gives a vector that divides the angle between them
+            let bx = norm1x +. norm2x
+            let by = norm1y +. norm2y
+            let (nx, ny) = Diagram__Graphics.normalizeVector(bx, by)
+
+            // invert angle
+            let nx' = -.nx
+            let ny' = -.ny
+            // 0 0 no angle
+
+            // move to
+            let mx = x1 -. minX'
+            let my = y1 -. minY'
+            let mx1 = mx +. nx' *. 10.
+            let my1 = my +. ny' *. 10.
+            //holder->Dom.setAttribute( "d", "M" ++ Js.Float.toString(mx) ++ " " ++ Js.Float.toString(my) ++ " " ++ Js.Float.toString(mx1) ++ " " ++ Js.Float.toString(my1), )
+
+            // update text label
+            switch domEdge->Dom.nextSibling->Js.toOption {
+            | Some(textNode) =>
+              let textRect = textNode->Dom.getBoundingClientRect
+              textNode->Dom.setTranslate3d(
+                minX' +. mx1 -. textRect.width /. 2.,
+                minY' +. my1 -. textRect.height /. 2.,
+              )
+            | _ => ()
+            }
           | _ => ()
           }
         | _ => ()
@@ -151,7 +190,7 @@ let run = (layout, container) => {
 }
 
 let reset = layout => {
-  let engine = Diagram__Dagre.make()
+  let engine = Diagram__Dagre.make({"multigraph": true})
   engine->Diagram__Dagre.setGraph(
     Js.Dict.fromArray([("rankdir", layout.orientation.contents->orientationToString)]),
   )
@@ -164,7 +203,7 @@ let registerListener = (layout, listener) => layout.listener = listener
 let onUpdate = layout => layout.listener()
 
 let make = () => {
-  let engine = Diagram__Dagre.make()
+  let engine = Diagram__Dagre.make({"multigraph": true})
   engine->Diagram__Dagre.setGraph(Js.Dict.fromArray([("rankdir", "TB")]))
   engine->Diagram__Dagre.setDefaultEdgeLabel(_ => Js.Obj.empty())
 

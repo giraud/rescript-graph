@@ -86,6 +86,7 @@ div[data-node] {
     border-radius: 5px;
     padding: 5px;
     cursor: pointer;
+    z-index: 1;
 }
 
 div[data-node]:hover {
@@ -116,8 +117,11 @@ div[data-edge-label] {
     cursor: pointer;
     stroke: none;
     color: #cdd9e5;
+    z-index: 0;
 }
 
 div[data-edge-label]:hover {
+    background-color: hsla(var(--color-canvas), 0.8);
     color: var(--color-hover);
+    z-index: 2;
 }

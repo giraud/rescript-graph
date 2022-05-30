@@ -40,6 +40,9 @@ let createEdge = (id, label) => {
   let start = Dom.Document.createElementNS("http://www.w3.org/2000/svg", "circle")
   start->Dom.setAttribute("r", "4")
 
+  //  let n = Dom.Document.createElementNS("http://www.w3.org/2000/svg", "path")
+  //  n->Dom.setAttribute("fill", "none")
+
   let arrow = Dom.Document.createElementNS("http://www.w3.org/2000/svg", "polygon")
 
   let text = Dom.Document.createElement("div")
@@ -50,6 +53,7 @@ let createEdge = (id, label) => {
   element->Dom.appendChild(path)
   element->Dom.appendChild(start)
   element->Dom.appendChild(arrow)
+  //  element->Dom.appendChild(n)
 
   g->Dom.appendChild(element)
   g->Dom.appendChild(text)
@@ -283,9 +287,17 @@ let reconciler = Diagram__ReactFiberReconciler.make(
               ->Diagram__Layout.setNode(id, rect.width /. scale, rect.height /. scale)
             }
           | "Edge" =>
-            switch (newProps->Js.Dict.get("source"), newProps->Js.Dict.get("target")) {
-            | (Some(source), Some(target)) =>
-              container->Diagram__Layout.get->Diagram__Layout.setEdge(source, target)
+            switch (
+              newProps->Js.Dict.get("source"),
+              newProps->Js.Dict.get("target"),
+              domElement->Dom.lastChild->Js.toOption,
+            ) {
+            | (Some(source), Some(target), Some(domEdgeLabel)) =>
+              let rect = Dom.getBoundingClientRect(domEdgeLabel)
+              let scale = container->Diagram__Transform.get->Diagram__Transform.scale
+              container
+              ->Diagram__Layout.get
+              ->Diagram__Layout.setEdge(source, target, rect.width /. scale, rect.height /. scale)
             | _ => ()
             }
           | _ => ()
@@ -325,8 +337,16 @@ let reconciler = Diagram__ReactFiberReconciler.make(
               layout->setNode(id, rect.width /. scale, rect.height /. scale)
             }
           | "Edge" =>
-            switch (props->Js.Dict.get("source"), props->Js.Dict.get("target")) {
-            | (Some(source), Some(target)) => layout->setEdge(source, target)
+            switch (
+              props->Js.Dict.get("source"),
+              props->Js.Dict.get("target"),
+              domElement->Dom.lastChild->Js.toOption,
+            ) {
+            | (Some(source), Some(target), Some(domEdgeLabel)) =>
+              let rect = Dom.getBoundingClientRect(domEdgeLabel)
+              Js.log3("rect", domElement, rect)
+              let scale = container->Diagram__Transform.get->Diagram__Transform.scale
+              layout->setEdge(source, target, rect.width /. scale, rect.height /. scale)
             | _ => ()
             }
           | _ => ()
