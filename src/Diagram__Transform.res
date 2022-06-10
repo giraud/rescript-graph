@@ -26,17 +26,17 @@ let resetBBox = transform => {
   transform.br = (minSafeFloat, minSafeFloat)
 }
 
-let computeBBox = (transform, node: Diagram__Dagre.nodeInfo) => {
+let computeBBox = (transform, x, y, width, height) => {
   let (left, top) = transform.tl
   let (right, bottom) = transform.br
 
-  let hw = node.width /. 2.
-  let hh = node.height /. 2.
+  let hw = width /. 2.
+  let hh = height /. 2.
 
-  let left' = node.x -. hw
-  let top' = node.y -. hh
-  let right' = node.x +. hw
-  let bottom' = node.y +. hh
+  let left' = x -. hw
+  let top' = y -. hh
+  let right' = x +. hw
+  let bottom' = y +. hh
 
   transform.tl = (Js.Math.min_float(left, left'), Js.Math.min_float(top, top'))
   transform.br = (Js.Math.max_float(right, right'), Js.Math.max_float(bottom, bottom'))

@@ -3,7 +3,7 @@ type t
 type nodeInfo = {x: float, y: float, width: float, height: float}
 type edge = {v: string, w: string, name: string}
 type point = {x: float, y: float}
-type edgeInfo = {points: array<point>}
+type edgeInfo = {points: array<point>, x: float, y: float, width: float, height: float}
 
 @send
 external setGraph: (t, Js.Dict.t<string>) => unit = "setGraph"

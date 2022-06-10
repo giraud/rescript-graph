@@ -108,8 +108,21 @@ let runLayout = rootContainer => {
   // compute diagram boundingBox
   transform->Diagram__Transform.resetBBox
   layout->Diagram__Layout.processNodes((_, nodeInfo) =>
-    transform->Diagram__Transform.computeBBox(nodeInfo)
+    transform->Diagram__Transform.computeBBox(
+      nodeInfo.x,
+      nodeInfo.y,
+      nodeInfo.width,
+      nodeInfo.height,
+    )
   )
+  layout->Diagram__Layout.processEdges((_, edgeInfo) => {
+    transform->Diagram__Transform.computeBBox(
+      edgeInfo.x -. edgeInfo.width /. 2.,
+      edgeInfo.y -. edgeInfo.height /. 2.,
+      edgeInfo.width,
+      edgeInfo.height,
+    )
+  })
   // update DOM
   rootContainer->updateBBox
 
@@ -344,7 +357,6 @@ let reconciler = Diagram__ReactFiberReconciler.make(
             ) {
             | (Some(source), Some(target), Some(domEdgeLabel)) =>
               let rect = Dom.getBoundingClientRect(domEdgeLabel)
-              Js.log3("rect", domElement, rect)
               let scale = container->Diagram__Transform.get->Diagram__Transform.scale
               layout->setEdge(source, target, rect.width /. scale, rect.height /. scale)
             | _ => ()

@@ -62,6 +62,7 @@ let processEdges = (layout, fn) =>
       fn(
         id,
         {
+          ...edgeInfo,
           Diagram__Dagre.points: edgeInfo.points->Belt.Array.map(_p => {
             Diagram__Dagre.x: %raw(`_p.x || 0`),
             y: %raw(`_p.y || 0`),
