@@ -26,7 +26,6 @@ module App = {
   @react.component
   let make = () => {
     let (initialNodes, initialEdges) = parse(sample2)
-    let (commands, setCommands) = React.useState(() => None)
 
     let (id, setId) = React.useState(() => initialNodes->Belt.Array.length)
     let (orientation, setOrientation) = React.useState(() => #vertical)
@@ -35,17 +34,7 @@ module App = {
     let (nodes, setNodes) = React.useState(() => initialNodes)
     let (edges, setEdges) = React.useState(() => initialEdges)
 
-    let reset = () =>
-      switch commands {
-      | None => ()
-      | Some(c) => c.Diagram.Commands.reset()
-      }
-
-    let fitToView = () =>
-      switch commands {
-      | None => ()
-      | Some(c) => c.Diagram.Commands.fitToView()
-      }
+    let (fitToView, reset, setCommands) = Diagram.useDiagramCommands()
 
     let flip = () =>
       setOrientation(prev =>
@@ -115,7 +104,7 @@ module App = {
         height="100%"
         orientation
         boundingBox={true}
-        onCreation={commands => setCommands(_ => Some(commands))}
+        onCreation={setCommands}
         onLayoutUpdate={fitToView}>
         {nodes->renderArray(nodeId =>
           <Diagram.Node

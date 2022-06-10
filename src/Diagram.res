@@ -44,6 +44,24 @@ module WithPointerEvents = {
 
 module Commands = Diagram__DOMRenderer.Commands
 
+let useDiagramCommands = () => {
+  let (commands: option<Commands.t>, setCommands) = React.useState(() => None)
+
+  let reset = () =>
+    switch commands {
+    | None => ()
+    | Some(c) => c.reset()
+    }
+
+  let fitToView = () =>
+    switch commands {
+    | None => ()
+    | Some(c) => c.fitToView()
+    }
+
+  (fitToView, reset, c => setCommands(_ => Some(c)))
+}
+
 @react.component
 let make = (
   ~width,
