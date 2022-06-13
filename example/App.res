@@ -28,12 +28,12 @@ module App = {
     let (initialNodes, initialEdges) = parse(sample2)
 
     let (id, setId) = React.useState(() => initialNodes->Belt.Array.length)
-    let (orientation, setOrientation) = React.useState(() => #vertical)
     let (start, setStart) = React.useState(() => "")
     let (end, setEnd) = React.useState(() => "")
     let (nodes, setNodes) = React.useState(() => initialNodes)
     let (edges, setEdges) = React.useState(() => initialEdges)
 
+    let (orientation, setOrientation) = React.useState(() => #vertical)
     let (fitToView, reset, setCommands) = Diagram.useDiagramCommands()
 
     let flip = () =>
@@ -58,8 +58,25 @@ module App = {
       setId(id => id + 1)
     }
 
+    let removeNode = _ => {
+      setNodes(prev => prev->Belt.Array.keep(itemId => itemId != start))
+      setEdges(prev =>
+        prev->Belt.Array.keep(((itemStart, itemEnd)) => itemStart != start && itemEnd != start)
+      )
+      setStart(_ => "")
+      setEnd(_ => "")
+    }
+
     let addEdge = _ => {
       setEdges(prev => prev->Belt.Array.concat([(start, end)]))
+      setStart(_ => "")
+      setEnd(_ => "")
+    }
+
+    let removeEdge = _ => {
+      setEdges(prev =>
+        prev->Belt.Array.keep(((itemStart, itemEnd)) => itemStart != start || itemEnd != end)
+      )
       setStart(_ => "")
       setEnd(_ => "")
     }
@@ -89,8 +106,14 @@ module App = {
     <main>
       <div className="toolbar">
         <button onClick={addNode}> {"Add node"->React.string} </button>
+        <button onClick={removeNode} disabled={start == "" || end != ""}>
+          {"Remove node"->React.string}
+        </button>
         <button onClick={addEdge} disabled={start == "" || end == ""}>
           {"Add edge"->React.string}
+        </button>
+        <button onClick={removeEdge} disabled={start == "" || end == ""}>
+          {"Remove edge"->React.string}
         </button>
         <button onClick={clear}> {"Clear"->React.string} </button>
         <button onClick={_ => reset()}> {"Reset"->React.string} </button>
