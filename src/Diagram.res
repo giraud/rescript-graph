@@ -62,6 +62,18 @@ let useDiagramCommands = () => {
   (fitToView, reset, c => setCommands(_ => Some(c)))
 }
 
+let useOrientation = init => {
+  let (orientation, setOrientation) = React.useState(init)
+  let flip = () =>
+    setOrientation(prev =>
+      switch prev {
+      | #vertical => #horizontal
+      | _ => #vertical
+      }
+    )
+  (orientation, flip)
+}
+
 @react.component
 let make = (
   ~width,

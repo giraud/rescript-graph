@@ -94,7 +94,7 @@ let run = (layout, container) => {
   )
 
   // Process all edges and adapt styles and co
-  layout->processEdges((id, {points}) =>
+  layout->processEdges((id, {points} as edgeInfo) =>
     switch container->queryEdge(id) {
     | None => ()
     | Some(domEdge) =>
@@ -143,43 +143,14 @@ let run = (layout, container) => {
           )
           arrow->Dom.setAttribute("points", arrowPolygon)
 
-          let midPoint = pointsCount / 2
-          switch (
-            points->Belt.Array.get(midPoint - 1),
-            points->Belt.Array.get(midPoint),
-            points->Belt.Array.get(midPoint + 1),
-          ) {
-          | (Some({x, y}), Some({x: x1, y: y1}), Some({x: x2, y: y2})) =>
-            // normalize vectors
-            let (norm1x, norm1y) = Diagram__Graphics.normalizePoints(x1, y1, x, y)
-            let (norm2x, norm2y) = Diagram__Graphics.normalizePoints(x1, y1, x2, y2)
-            // adding two unit vectors, gives a vector that divides the angle between them
-            let bx = norm1x +. norm2x
-            let by = norm1y +. norm2y
-            let (nx, ny) = Diagram__Graphics.normalizeVector(bx, by)
-
-            // invert angle
-            let nx' = -.nx
-            let ny' = -.ny
-            // 0 0 no angle
-
-            // move to
-            let mx = x1 -. minX'
-            let my = y1 -. minY'
-            let mx1 = mx +. nx' *. 10.
-            let my1 = my +. ny' *. 10.
-            //holder->Dom.setAttribute( "d", "M" ++ Js.Float.toString(mx) ++ " " ++ Js.Float.toString(my) ++ " " ++ Js.Float.toString(mx1) ++ " " ++ Js.Float.toString(my1), )
-
-            // update text label
-            switch domEdge->Dom.nextSibling->Js.toOption {
-            | Some(textNode) =>
-              let textRect = textNode->Dom.getBoundingClientRect
-              textNode->Dom.setTranslate3d(
-                minX' +. mx1 -. textRect.width /. 2.,
-                minY' +. my1 -. textRect.height /. 2.,
-              )
-            | _ => ()
-            }
+          // update text label
+          switch domEdge->Dom.nextSibling->Js.toOption {
+          | Some(textNode) =>
+            let textRect = textNode->Dom.getBoundingClientRect
+            textNode->Dom.setTranslate3d(
+              edgeInfo.x -. textRect.width /. 2.,
+              edgeInfo.y -. textRect.height /. 2.,
+            )
           | _ => ()
           }
         | _ => ()

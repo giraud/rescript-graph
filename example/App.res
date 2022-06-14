@@ -6,6 +6,7 @@ external getElementById: string => Js.nullable<Dom.element> = "getElementById"
 let sample_one = "1"
 let sample1 = "1|2|3||1-2|1-3"
 let sample2 = "1|2|3|4|5|6|7||1-2|1-3|1-5|2-3|2-7|4-1|6-6"
+let sample3 = "B|C|D||B-C:BtoC|C-D:CtoD|D-C:DtoC|B-D:A very very long name to see if layout is correctly updated"
 
 let parse = instructions => {
   instructions
@@ -14,7 +15,11 @@ let parse = instructions => {
   ->Belt.Array.reduce(([], []), ((nodes, edges) as acc, line) => {
     switch line->Js.String2.split("-") {
     | [node] => (nodes->Belt.Array.concat([node]), edges)
-    | [source, target] => (nodes, edges->Belt.Array.concat([(source, target)]))
+    | [source, target] =>
+      switch target->Js.String2.split(":") {
+      | [target', label] => (nodes, edges->Belt.Array.concat([(source, target', label)]))
+      | _ => (nodes, edges->Belt.Array.concat([(source, target, "")]))
+      }
     | _ => acc
     }
   })
@@ -25,7 +30,7 @@ let renderArray = (a, fn) => a->Belt.Array.map(fn)->React.array
 module App = {
   @react.component
   let make = () => {
-    let (initialNodes, initialEdges) = parse(sample2)
+    let (initialNodes, initialEdges) = parse(sample3)
 
     let (id, setId) = React.useState(() => initialNodes->Belt.Array.length)
     let (start, setStart) = React.useState(() => "")
@@ -33,16 +38,8 @@ module App = {
     let (nodes, setNodes) = React.useState(() => initialNodes)
     let (edges, setEdges) = React.useState(() => initialEdges)
 
-    let (orientation, setOrientation) = React.useState(() => #vertical)
     let (fitToView, reset, setCommands) = Diagram.useDiagramCommands()
-
-    let flip = () =>
-      setOrientation(prev =>
-        switch prev {
-        | #vertical => #horizontal
-        | _ => #vertical
-        }
-      )
+    let (orientation, flip) = Diagram.useOrientation(() => #vertical)
 
     let clear = _e => {
       setId(_ => 0)
@@ -61,21 +58,21 @@ module App = {
     let removeNode = _ => {
       setNodes(prev => prev->Belt.Array.keep(itemId => itemId != start))
       setEdges(prev =>
-        prev->Belt.Array.keep(((itemStart, itemEnd)) => itemStart != start && itemEnd != start)
+        prev->Belt.Array.keep(((itemStart, itemEnd, _)) => itemStart != start && itemEnd != start)
       )
       setStart(_ => "")
       setEnd(_ => "")
     }
 
     let addEdge = _ => {
-      setEdges(prev => prev->Belt.Array.concat([(start, end)]))
+      setEdges(prev => prev->Belt.Array.concat([(start, end, "")]))
       setStart(_ => "")
       setEnd(_ => "")
     }
 
     let removeEdge = _ => {
       setEdges(prev =>
-        prev->Belt.Array.keep(((itemStart, itemEnd)) => itemStart != start || itemEnd != end)
+        prev->Belt.Array.keep(((itemStart, itemEnd, _)) => itemStart != start || itemEnd != end)
       )
       setStart(_ => "")
       setEnd(_ => "")
@@ -138,12 +135,14 @@ module App = {
             {("Node " ++ nodeId)->React.string}
           </Diagram.Node>
         )}
-        {edges->renderArray(((source, target)) =>
+        {edges->renderArray(((source, target, label)) =>
           <Diagram.Edge
             key={source ++ "-" ++ target}
             source
             target
-            label={"edge from " ++ source ++ " to " ++ target}
+            label={label->Js.String2.length == 0
+              ? "edge from " ++ source ++ " to " ++ target
+              : label}
             onClick={_ => selectNodes(source, target)}
           />
         )}
