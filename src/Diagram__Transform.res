@@ -27,8 +27,8 @@ let resetBBox = transform => {
 }
 
 let computeBBox = (transform, x, y, width, height) => {
-  let (left, top) = transform.tl
-  let (right, bottom) = transform.br
+  let (top, left) = transform.tl
+  let (bottom, right) = transform.br
 
   let hw = width /. 2.
   let hh = height /. 2.
@@ -38,14 +38,14 @@ let computeBBox = (transform, x, y, width, height) => {
   let right' = x +. hw
   let bottom' = y +. hh
 
-  transform.tl = (Js.Math.min_float(left, left'), Js.Math.min_float(top, top'))
-  transform.br = (Js.Math.max_float(right, right'), Js.Math.max_float(bottom, bottom'))
+  transform.tl = (Js.Math.min_float(top, top'), Js.Math.min_float(left, left'))
+  transform.br = (Js.Math.max_float(bottom, bottom'), Js.Math.max_float(right, right'))
   ()
 }
 
 let toPixels = transform => {
-  let (left, top) = transform.tl
-  let (right, bottom) = transform.br
+  let (top, left) = transform.tl
+  let (bottom, right) = transform.br
   (
     Js.Float.toString(Js.Math.max_float(0., right -. left)) ++ "px",
     Js.Float.toString(Js.Math.max_float(0., bottom -. top)) ++ "px",
@@ -53,8 +53,8 @@ let toPixels = transform => {
 }
 
 let getBBox = transform => {
-  let (left, top) = transform.tl
-  let (right, bottom) = transform.br
+  let (top, left) = transform.tl
+  let (bottom, right) = transform.br
   (Js.Math.max_float(0., right -. left), Js.Math.max_float(0., bottom -. top))
 }
 

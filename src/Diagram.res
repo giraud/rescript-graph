@@ -97,7 +97,6 @@ let make = (
       container
       ->Diagram__Layout.get
       ->Diagram__Layout.registerListener(onLayoutUpdate->Belt.Option.getWithDefault(() => ()))
-      onLayoutUpdate->Belt.Option.forEach(fn => fn())
     | None => ()
     }
     None

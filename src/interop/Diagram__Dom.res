@@ -3,6 +3,8 @@ module NodeType = {
   let document = 9
 }
 
+type element = Dom.element
+
 type domRect = {width: float, height: float, top: float, left: float, bottom: float, right: float}
 
 module Document = {

@@ -125,10 +125,11 @@ let runLayout = rootContainer => {
   })
   // update DOM
   rootContainer->updateBBox
-
-  // Callback onLayoutUpdate
-  layout->Diagram__Layout.onUpdate // ?? add/position node/edge
 }
+
+@set @scope("dataset")
+external setDataSetLayoutUpdated: (Dom.element, string) => unit = "layoutUpdated"
+@get @scope("dataset") external getDataSetLayoutUpdated: Dom.element => string = "layoutUpdated"
 
 let reconciler = Diagram__ReactFiberReconciler.make(
   noDebugMethods(
@@ -137,13 +138,28 @@ let reconciler = Diagram__ReactFiberReconciler.make(
       supportsMutation: true,
       useSyncScheduling: true,
       getPublicInstance: instance => instance,
-      prepareForCommit: _ => Js.Nullable.null,
-      resetAfterCommit: _ => (),
+      prepareForCommit: container => {
+        container->Diagram__Layout.get->Diagram__Layout.reset
+        container->Diagram__Transform.get->Diagram__Transform.resetBBox
+        container->updateBBox
+        Js.Nullable.null
+      },
+      resetAfterCommit: container => {
+        let layoutUpdated = container->getDataSetLayoutUpdated
+        // Callback onLayoutUpdate
+        if layoutUpdated == "true" {
+          container->Diagram__Layout.get->Diagram__Layout.onUpdate
+          container->setDataSetLayoutUpdated("false")
+        }
+      },
       //
-      createInstance: (elementType, props, _rootContainer, _context, _internalHandle) => {
+      createInstance: (elementType, props, rootContainer, _context, _internalHandle) => {
         let element = switch elementType {
-        | "Node" => createNode(props->Js.Dict.get("nodeId")->Belt.Option.getWithDefault("nodeId"))
+        | "Node" =>
+          rootContainer->setDataSetLayoutUpdated("true")
+          createNode(props->Js.Dict.get("nodeId")->Belt.Option.getWithDefault("nodeId"))
         | "Edge" =>
+          rootContainer->setDataSetLayoutUpdated("true")
           let id =
             props->Js.Dict.get("source")->Belt.Option.getWithDefault("source") ++
             "-" ++
@@ -162,10 +178,7 @@ let reconciler = Diagram__ReactFiberReconciler.make(
         Js.typeof(children) == "string" || Js.typeof(children) == "number"
       },
       //
-      getRootHostContext: rootContainer => {
-        rootContainer->Diagram__Layout.get->Diagram__Layout.reset
-        rootContainer->Diagram__Transform.get->Diagram__Transform.resetBBox
-        rootContainer->updateBBox
+      getRootHostContext: _rootContainer => {
         Js.Obj.empty()
       },
       getChildHostContext: (parentHostContext, _elementType, _rootContainer) => parentHostContext,
@@ -181,7 +194,9 @@ let reconciler = Diagram__ReactFiberReconciler.make(
       removeChild: (parentInstance, child) => parentInstance->Dom.removeChild(child),
       removeChildFromContainer: (rootContainer, child) =>
         switch child->Dom.dataset->Js.Dict.get("map") {
-        | None => rootContainer->Dom.forFirstChild(canvas => canvas->Dom.removeChild(child))
+        | None =>
+          rootContainer->setDataSetLayoutUpdated("true")
+          rootContainer->Dom.forFirstChild(canvas => canvas->Dom.removeChild(child))
         | Some(_) => rootContainer->Dom.removeChild(child)
         },
       //
