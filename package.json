@@ -1,6 +1,13 @@
 {
     "name": "@giraud/rescript-react-diagram",
     "version": "1.0.0",
+    "author": "Hervé Giraud",
+    "description": "Easy to use automatic diagram layout component in react",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/giraud/rescript-react-diagram"
+    },
     "scripts": {
         "build": "rescript",
         "clean": "rescript clean -with-deps",
@@ -13,8 +20,6 @@
         "auto layout",
         "react"
     ],
-    "author": "Hervé Giraud",
-    "license": "MIT",
     "dependencies": {
         "@rescript/react": "^0.10.0",
         "dagre": "^0.8.0",
