@@ -1,0 +1,11 @@
+/.idea
+/.cache
+/example
+/lib
+.merlin
+*.tgz
+*.iml
+*.lock
+*.png
+*.html
+vite.config.js
