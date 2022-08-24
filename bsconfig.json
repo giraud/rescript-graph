@@ -1,6 +1,5 @@
 {
-    "name": "rescript-diagram",
-    "version": "0.0.1",
+    "name": "@giraud/rescript-react-diagram",
     "sources": ["src", "src/interop",
         {
             "dir": "example",
