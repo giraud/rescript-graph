@@ -1,4 +1,5 @@
 type orientation = [#vertical | #horizontal]
+type labelPos = [#left(float) | #center | #right(float)]
 
 type t = {
   engine: ref<Diagram__Dagre.t>,
@@ -27,13 +28,22 @@ let setNode = (layout, id, width, height) =>
     },
   )
 
-let setEdge = (layout, source, target, width, height) =>
+let setEdge = (layout, source, target, width, height, labelPos) =>
   layout.engine.contents->Diagram__Dagre.setEdge(
     source,
     target,
     {
       "width": width,
       "height": height,
+      "labelpos": switch labelPos {
+      | #left(_) => "l"
+      | #center => "c"
+      | #right(_) => "r"
+      },
+      "labeloffset": switch labelPos {
+      | #left(offset) | #right(offset) => offset
+      | _ => 0.
+      },
     },
     "name-" ++ source ++ "-" ++ target,
   )

@@ -2,14 +2,18 @@ module Dom = Diagram__Dom
 
 @module("../../../src/debug.js")
 external debugMethods: (
-  Diagram__ReactFiberReconciler.hostConfig<'a, 'b, 'c>,
+  Diagram__ReactFiberReconciler.hostConfig<'b, 'c>,
   array<string>,
-) => Diagram__ReactFiberReconciler.hostConfig<'a, 'b, 'c> = "debugMethods"
+) => Diagram__ReactFiberReconciler.hostConfig<'b, 'c> = "debugMethods"
 @module("../../../src/debug.js")
 external noDebugMethods: (
-  Diagram__ReactFiberReconciler.hostConfig<'a, 'b, 'c>,
+  Diagram__ReactFiberReconciler.hostConfig<'b, 'c>,
   array<string>,
-) => Diagram__ReactFiberReconciler.hostConfig<'a, 'b, 'c> = "noDebugMethods"
+) => Diagram__ReactFiberReconciler.hostConfig<'b, 'c> = "noDebugMethods"
+
+external jsPropToString: Diagram__ReactFiberReconciler.jsProp => string = "%identity"
+external jsPropToLabelPos: Diagram__ReactFiberReconciler.jsProp => Diagram__Layout.labelPos =
+  "%identity"
 
 let getRootContainer = instance => {
   let parentNode = instance->Dom.parentNode->Js.toOption
@@ -157,14 +161,19 @@ let reconciler = Diagram__ReactFiberReconciler.make(
         let element = switch elementType {
         | "Node" =>
           rootContainer->setDataSetLayoutUpdated("true")
-          createNode(props->Js.Dict.get("nodeId")->Belt.Option.getWithDefault("nodeId"))
+          createNode(
+            props->Js.Dict.get("nodeId")->Belt.Option.mapWithDefault("nodeId", jsPropToString),
+          )
         | "Edge" =>
           rootContainer->setDataSetLayoutUpdated("true")
           let id =
-            props->Js.Dict.get("source")->Belt.Option.getWithDefault("source") ++
+            props->Js.Dict.get("source")->Belt.Option.mapWithDefault("source", jsPropToString) ++
             "-" ++
-            props->Js.Dict.get("target")->Belt.Option.getWithDefault("target")
-          createEdge(id, props->Js.Dict.get("label")->Belt.Option.getWithDefault(""))
+            props->Js.Dict.get("target")->Belt.Option.mapWithDefault("target", jsPropToString)
+          createEdge(
+            id,
+            props->Js.Dict.get("label")->Belt.Option.mapWithDefault("", jsPropToString),
+          )
         | "Map" => createMap()
         | _ => Dom.Document.createElement(elementType)
         }
@@ -229,16 +238,19 @@ let reconciler = Diagram__ReactFiberReconciler.make(
             // nodes will be appended in `appendChild`
             let children = props->Js.Dict.unsafeGet("children")
             if Js.typeof(children) == "string" || Js.typeof(children) == "number" {
-              domElement->Dom.setTextContent(children)
+              domElement->Dom.setTextContent(children->jsPropToString)
             }
           | (_, "className") =>
-            domElement->Dom.setAttribute("class", props->Js.Dict.unsafeGet("className"))
+            domElement->Dom.setAttribute(
+              "class",
+              props->Js.Dict.unsafeGet("className")->jsPropToString,
+            )
           | (_, "style") => domElement->setStyles(Obj.magic(props->Js.Dict.unsafeGet("style")))
           | (_, name /* , value */) if isEventName(name) =>
             let eventName = name->Js.String2.toLowerCase->Js.String2.replace("on", "")
             domElement->Dom.addEventListener(eventName, props->Js.Dict.unsafeGet(name))
           | (_, name /* , value */) =>
-            domElement->Dom.setAttribute(name, props->Js.Dict.unsafeGet(name))
+            domElement->Dom.setAttribute(name, props->Js.Dict.unsafeGet(name)->jsPropToString)
           }
         })
 
@@ -294,8 +306,8 @@ let reconciler = Diagram__ReactFiberReconciler.make(
               domElement->Dom.removeEventListener(eventName, oldProps->Js.Dict.unsafeGet(propName))
               domElement->Dom.addEventListener(eventName, event)
             | Some(attribute) if propName == "className" =>
-              domElement->Dom.setAttribute("class", attribute)
-            | Some(attribute) => domElement->Dom.setAttribute(propName, attribute)
+              domElement->Dom.setAttribute("class", attribute->jsPropToString)
+            | Some(attribute) => domElement->Dom.setAttribute(propName, attribute->jsPropToString)
             }
           }
         })
@@ -305,7 +317,7 @@ let reconciler = Diagram__ReactFiberReconciler.make(
         | Some(container) =>
           switch elementType {
           | "Node" =>
-            switch newProps->Js.Dict.get("nodeId") {
+            switch newProps->Js.Dict.get("nodeId")->Belt.Option.map(jsPropToString) {
             | None => ()
             | Some(id) =>
               let rect = Dom.getBoundingClientRect(domElement)
@@ -316,16 +328,25 @@ let reconciler = Diagram__ReactFiberReconciler.make(
             }
           | "Edge" =>
             switch (
-              newProps->Js.Dict.get("source"),
-              newProps->Js.Dict.get("target"),
+              newProps->Js.Dict.get("source")->Belt.Option.map(jsPropToString),
+              newProps->Js.Dict.get("target")->Belt.Option.map(jsPropToString),
+              newProps
+              ->Js.Dict.get("labelPos")
+              ->Belt.Option.mapWithDefault(#center, jsPropToLabelPos),
               domElement->Dom.lastChild->Js.toOption,
             ) {
-            | (Some(source), Some(target), Some(domEdgeLabel)) =>
+            | (Some(source), Some(target), labelPos, Some(domEdgeLabel)) =>
               let rect = Dom.getBoundingClientRect(domEdgeLabel)
               let scale = container->Diagram__Transform.get->Diagram__Transform.scale
               container
               ->Diagram__Layout.get
-              ->Diagram__Layout.setEdge(source, target, rect.width /. scale, rect.height /. scale)
+              ->Diagram__Layout.setEdge(
+                source,
+                target,
+                rect.width /. scale,
+                rect.height /. scale,
+                labelPos,
+              )
             | _ => ()
             }
           | _ => ()
@@ -357,7 +378,7 @@ let reconciler = Diagram__ReactFiberReconciler.make(
 
           switch elementType {
           | "Node" =>
-            switch props->Js.Dict.get("nodeId") {
+            switch props->Js.Dict.get("nodeId")->Belt.Option.map(jsPropToString) {
             | None => ()
             | Some(id) =>
               let rect = Dom.getBoundingClientRect(domElement)
@@ -366,14 +387,15 @@ let reconciler = Diagram__ReactFiberReconciler.make(
             }
           | "Edge" =>
             switch (
-              props->Js.Dict.get("source"),
-              props->Js.Dict.get("target"),
+              props->Js.Dict.get("source")->Belt.Option.map(jsPropToString),
+              props->Js.Dict.get("target")->Belt.Option.map(jsPropToString),
+              props->Js.Dict.get("labelPos")->Belt.Option.mapWithDefault(#center, jsPropToLabelPos),
               domElement->Dom.lastChild->Js.toOption,
             ) {
-            | (Some(source), Some(target), Some(domEdgeLabel)) =>
+            | (Some(source), Some(target), labelPos, Some(domEdgeLabel)) =>
               let rect = Dom.getBoundingClientRect(domEdgeLabel)
               let scale = container->Diagram__Transform.get->Diagram__Transform.scale
-              layout->setEdge(source, target, rect.width /. scale, rect.height /. scale)
+              layout->setEdge(source, target, rect.width /. scale, rect.height /. scale, labelPos)
             | _ => ()
             }
           | _ => ()

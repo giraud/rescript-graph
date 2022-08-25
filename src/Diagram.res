@@ -15,6 +15,7 @@ module Edge = {
     ~target: string,
     ~className: string=?,
     ~label: string=?,
+    ~labelPos: Diagram__Layout.labelPos=?,
     ~onClick: ReactEvent.Mouse.t => unit=?,
   ) => React.element = "Edge"
 }

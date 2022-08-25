@@ -4,13 +4,15 @@ type internalHandle
 type timestamp
 type elementType = string
 type context<'a> = Js.t<'a>
-type props<'a> = Js.Dict.t<'a>
+
+type jsProp // Opaque prop from js
+type props = Js.Dict.t<jsProp>
 
 /**
  See https://github.com/facebook/react/tree/main/packages/react-reconciler
  Comments are copied from this page
  */
-type hostConfig<'a, 'c, 'commit> = {
+type hostConfig<'c, 'commit> = {
   isPrimaryRenderer: bool,
   supportsMutation: bool,
   useSyncScheduling: bool,
@@ -30,17 +32,11 @@ type hostConfig<'a, 'c, 'commit> = {
    This method happens in the render phase.
    It can (and usually should) mutate the node it has just created before returning it, but it must not modify any other nodes.
  */
-  createInstance: (
-    elementType,
-    props<'a>,
-    rootContainer,
-    context<'c>,
-    internalHandle,
-  ) => Dom.element,
+  createInstance: (elementType, props, rootContainer, context<'c>, internalHandle) => Dom.element,
   /**
    Same as createInstance, but for text nodes.
  */
-  createTextInstance: (string, props<'a>, internalHandle) => Dom.element,
+  createTextInstance: (string, props, internalHandle) => Dom.element,
   /**
    This method should mutate the parentInstance and add the child to its list of children.
    For example, in the DOM this would translate to a parentInstance.appendChild(child) call.
@@ -65,12 +61,12 @@ type hostConfig<'a, 'c, 'commit> = {
 
    If you don't want to do anything here, you should return false.
  */
-  finalizeInitialChildren: (instance, elementType, props<'a>, rootContainer, context<'c>) => bool,
+  finalizeInitialChildren: (instance, elementType, props, rootContainer, context<'c>) => bool,
   /**
    Some target platforms support setting an instance's text content without manually creating a text node.
    For example, in the DOM, you can set node.textContent instead of creating a text node and appending it.
  */
-  shouldSetTextContent: (elementType, props<'a>) => bool,
+  shouldSetTextContent: (elementType, props) => bool,
   /**
    React calls this method so that you can compare the previous and the next props,
    and decide whether you need to update the underlying instance or not.
@@ -81,7 +77,7 @@ type hostConfig<'a, 'c, 'commit> = {
 
    This method happens in the render phase. It should only calculate the update ? but not apply it!
  */
-  prepareUpdate: (Dom.element, elementType, props<'a>, props<'a>) => array<string>,
+  prepareUpdate: (Dom.element, elementType, props, props) => array<string>,
   /**
    This method should mutate the instance according to the set of changes in updatePayload.
 
@@ -91,14 +87,7 @@ type hostConfig<'a, 'c, 'commit> = {
 
    Ideally, all the diffing and calculation should happen inside prepareUpdate so that commitUpdate can be fast and straightforward.
  */
-  commitUpdate: (
-    Dom.element,
-    array<string>,
-    elementType,
-    props<'a>,
-    props<'a>,
-    internalHandle,
-  ) => unit,
+  commitUpdate: (Dom.element, array<string>, elementType, props, props, internalHandle) => unit,
   /**
    This method lets you store some information before React starts making changes to the tree on the screen.
    For example, the DOM renderer stores the current text selection so that it can later restore it.
@@ -168,7 +157,7 @@ type hostConfig<'a, 'c, 'commit> = {
 
    If you never return true from finalizeInitialChildren, you can leave it empty.
  */
-  commitMount: (instance, elementType, props<'a>, internalHandle) => unit,
+  commitMount: (instance, elementType, props, internalHandle) => unit,
   /**
   This method should mutate the container root node and remove all children from it.
  */
@@ -189,4 +178,4 @@ type t = {
 }
 
 @module("react-reconciler")
-external make: hostConfig<'a, 'c, 'context> => t = "default"
+external make: hostConfig<'c, 'context> => t = "default"

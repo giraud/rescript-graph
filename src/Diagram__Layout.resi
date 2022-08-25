@@ -1,6 +1,7 @@
 type t
 
 type orientation = [#vertical | #horizontal]
+type labelPos = [#left(float) | #center | #right(float)]
 
 let displayBBox: t => bool
 let setDisplayBBox: (t, bool) => unit
@@ -8,7 +9,7 @@ let setDisplayBBox: (t, bool) => unit
 let setOrientation: (t, orientation) => unit
 
 let setNode: (t, string, float, float) => unit
-let setEdge: (t, string, string, float, float) => unit
+let setEdge: (t, string, string, float, float, labelPos) => unit
 
 let processNodes: (t, (string, Diagram__Dagre.nodeInfo) => unit) => unit
 let processEdges: (t, (string, Diagram__Dagre.edgeInfo) => unit) => unit
