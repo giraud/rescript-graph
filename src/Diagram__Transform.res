@@ -5,8 +5,10 @@ type t = {
   mutable br: (float, float),
 }
 
-let maxSafeFloat = %raw(`Number.MAX_SAFE_INTEGER`)
-let minSafeFloat = %raw(`Number.MIN_SAFE_INTEGER`)
+@val @scope("Number")
+external maxSafeFloat: float = "MAX_SAFE_INTEGER"
+@val @scope("Number")
+external minSafeFloat: float = "MIN_SAFE_INTEGER"
 
 let origin = transform => transform.origin
 let scale = transform => transform.scale
@@ -40,6 +42,15 @@ let computeBBox = (transform, x, y, width, height) => {
 
   transform.tl = (Js.Math.min_float(top, top'), Js.Math.min_float(left, left'))
   transform.br = (Js.Math.max_float(bottom, bottom'), Js.Math.max_float(right, right'))
+  ()
+}
+
+let updateBBox = (transform, left, top, right, bottom) => {
+  let (tTop, tLeft) = transform.tl
+  let (tBottom, tRight) = transform.br
+
+  transform.tl = (Js.Math.min_float(tTop, top), Js.Math.min_float(tLeft, left))
+  transform.br = (Js.Math.max_float(tBottom, bottom), Js.Math.max_float(tRight, right))
   ()
 }
 

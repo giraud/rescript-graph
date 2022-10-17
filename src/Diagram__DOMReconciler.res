@@ -102,6 +102,11 @@ let updateBBox = rootContainer =>
     })
   )
 
+@val @scope("Number")
+external maxSafeFloat: float = "MAX_SAFE_INTEGER"
+@val @scope("Number")
+external minSafeFloat: float = "MIN_SAFE_INTEGER"
+
 let runLayout = rootContainer => {
   let layout = rootContainer->Diagram__Layout.get
   let transform = rootContainer->Diagram__Transform.get
@@ -111,7 +116,7 @@ let runLayout = rootContainer => {
 
   // compute diagram boundingBox
   transform->Diagram__Transform.resetBBox
-  layout->Diagram__Layout.processNodes((_, nodeInfo) =>
+  layout->Diagram__Layout.processNodes((. _, nodeInfo) =>
     transform->Diagram__Transform.computeBBox(
       nodeInfo.x,
       nodeInfo.y,
@@ -119,14 +124,25 @@ let runLayout = rootContainer => {
       nodeInfo.height,
     )
   )
-  layout->Diagram__Layout.processEdges((_, edgeInfo) => {
-    transform->Diagram__Transform.computeBBox(
-      edgeInfo.x -. edgeInfo.width /. 2.,
-      edgeInfo.y -. edgeInfo.height /. 2.,
-      edgeInfo.width,
-      edgeInfo.height,
-    )
-  })
+  layout->Diagram__Layout.processEdges((. _, edgeInfo) =>
+    // Use label bbox if it exist, use points bbox else
+    switch (edgeInfo.x, edgeInfo.y) {
+    | (Some(labelX), Some(labelY)) =>
+      transform->Diagram__Transform.computeBBox(labelX, labelY, edgeInfo.width, edgeInfo.height)
+    | _ =>
+      let (pMinX, pMinY, pMaxX, pMaxY) =
+        edgeInfo.points->Belt.Array.reduce(
+          (maxSafeFloat, maxSafeFloat, minSafeFloat, minSafeFloat),
+          ((minX, minY, maxX, maxY), {x, y}) => (
+            x < minX ? x : minX,
+            y < minY ? y : minY,
+            maxX < x ? x : maxX,
+            maxY < y ? y : maxY,
+          ),
+        )
+      transform->Diagram__Transform.updateBBox(pMinX, pMinY, pMaxX, pMaxY)
+    }
+  )
   // update DOM
   rootContainer->updateBBox
 }

@@ -8,6 +8,13 @@ let reset: t => unit
 
 let resetBBox: t => unit
 let computeBBox: (t, float /* x */, float /* y */, float /* w */, float /* h */) => unit
+let updateBBox: (
+  t,
+  float /* left */,
+  float /* top */,
+  float /* right */,
+  float /* bottom */,
+) => unit
 let toPixels: t => (string, string)
 let getBBox: t => (float, float)
 
