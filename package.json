@@ -1,6 +1,6 @@
 {
     "name": "@giraud/rescript-react-diagram",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "author": "Hervé Giraud",
     "description": "Easy to use automatic diagram layout component in react",
     "license": "MIT",
@@ -28,8 +28,8 @@
         "react-reconciler": "^0.26.0"
     },
     "devDependencies": {
-        "rescript": "*",
         "@vitejs/plugin-react": "^1.0.0",
-        "vite": "^2.0.0"
+        "rescript": "*",
+        "vite": "^2.9.15"
     }
 }
