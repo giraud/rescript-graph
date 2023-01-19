@@ -192,6 +192,11 @@ let reconciler = Diagram__ReactFiberReconciler.make(
             props->Js.Dict.get("label")->Belt.Option.mapWithDefault("", jsPropToString),
           )
         | "Map" => createMap()
+        | "svg"
+        | "circle"
+        | "path"
+        | "rect" =>
+          Dom.Document.createElementNS("http://www.w3.org/2000/svg", elementType)
         | _ => Dom.Document.createElement(elementType)
         }
 
@@ -266,7 +271,8 @@ let reconciler = Diagram__ReactFiberReconciler.make(
           | (_, name /* , value */) if isEventName(name) =>
             let eventName = name->Js.String2.toLowerCase->Js.String2.replace("on", "")
             domElement->Dom.addEventListener(eventName, props->Js.Dict.unsafeGet(name))
-          | (_, name /* , value */) =>
+          | (elementType, name /* , value */) =>
+            Js.log3("setAttribute", elementType, name)
             domElement->Dom.setAttribute(name, props->Js.Dict.unsafeGet(name)->jsPropToString)
           }
         })
