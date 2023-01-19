@@ -249,8 +249,10 @@ let make = (
       let (x, y) = transform->Diagram__Transform.origin
       let scale = transform->Diagram__Transform.scale
 
-      let pointerX = e->Diagram__Dom.clientX
-      let pointerY = e->Diagram__Dom.clientY
+      let eMouse = e->Diagram__Dom.asMouseEvent
+      let targetBBox = eMouse->Diagram__Dom.mouseEventTarget->Diagram__Dom.getBoundingClientRect
+      let pointerX = eMouse->Diagram__Dom.clientX -. targetBBox.left
+      let pointerY = eMouse->Diagram__Dom.clientY -. targetBBox.top
 
       let x' = (pointerX -. x) /. scale
       let y' = (pointerY -. y) /. scale
