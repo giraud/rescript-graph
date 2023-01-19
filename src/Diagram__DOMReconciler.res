@@ -158,6 +158,7 @@ let reconciler = Diagram__ReactFiberReconciler.make(
       supportsMutation: true,
       useSyncScheduling: true,
       getPublicInstance: instance => instance,
+      preparePortalMount: _container => (),
       prepareForCommit: container => {
         container->Diagram__Layout.get->Diagram__Layout.reset
         container->Diagram__Transform.get->Diagram__Transform.resetBBox

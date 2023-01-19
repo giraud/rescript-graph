@@ -21,6 +21,10 @@ type hostConfig<'c, 'commit> = {
   getChildHostContext: (context<'c>, elementType, rootContainer) => context<'c>,
   getPublicInstance: instance => instance,
   /**
+   This method is called for a container that's used as a portal target. Usually you can leave it empty.
+ */
+  preparePortalMount: rootContainer => unit /* ? */,
+  /**
    This method should return a newly created node.
    For example, the DOM renderer would call document.createElement(type) here and then set the properties from props.
 
