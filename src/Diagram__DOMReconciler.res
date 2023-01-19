@@ -195,7 +195,8 @@ let reconciler = Diagram__ReactFiberReconciler.make(
         | "svg"
         | "circle"
         | "path"
-        | "rect" =>
+        | "rect"
+        | "g" =>
           Dom.Document.createElementNS("http://www.w3.org/2000/svg", elementType)
         | _ => Dom.Document.createElement(elementType)
         }
