@@ -272,8 +272,7 @@ let reconciler = Diagram__ReactFiberReconciler.make(
           | (_, name /* , value */) if isEventName(name) =>
             let eventName = name->Js.String2.toLowerCase->Js.String2.replace("on", "")
             domElement->Dom.addEventListener(eventName, props->Js.Dict.unsafeGet(name))
-          | (elementType, name /* , value */) =>
-            Js.log3("setAttribute", elementType, name)
+          | (_, name /* , value */) =>
             domElement->Dom.setAttribute(name, props->Js.Dict.unsafeGet(name)->jsPropToString)
           }
         })
