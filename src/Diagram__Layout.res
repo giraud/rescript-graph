@@ -3,7 +3,7 @@ type labelPos = [#left(float) | #center | #right(float)]
 
 type t = {
   engine: ref<Diagram__Dagre.t>,
-  mutable listener: unit => unit,
+  listener: ref<unit => unit>,
   displayBBox: ref<bool>,
   orientation: ref<orientation>,
 }
@@ -181,8 +181,8 @@ let reset = layout => {
   layout.engine := engine
 }
 
-let registerListener = (layout, listener) => layout.listener = listener
-let onUpdate = layout => layout.listener()
+let registerListener = (layout, listener) => layout.listener.contents = listener
+let onUpdate = layout => layout.listener.contents()
 
 let make = () => {
   let engine = Diagram__Dagre.make({"multigraph": true})
@@ -191,7 +191,7 @@ let make = () => {
 
   {
     engine: ref(engine),
-    listener: () => (),
+    listener: ref(() => ()),
     displayBBox: ref(false),
     orientation: ref(#vertical),
   }

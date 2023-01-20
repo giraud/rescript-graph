@@ -71,7 +71,7 @@ let make = (
   ~orientation: Diagram__Layout.orientation=#vertical,
   ~boundingBox=false,
   ~selectionZoom=false,
-  ~onCommands: option<React.ref<option<commands>>>=?,
+  ~commands: option<React.ref<option<commands>>>=?,
   ~onLayoutUpdate=?,
   ~children,
 ) => {
@@ -84,10 +84,11 @@ let make = (
   let (fitToViewFn, setFitToViewFn) = React.Uncurried.useState(() => None)
   let (resetFn, setResetFn) = React.Uncurried.useState(() => None)
   React.useImperativeHandle2(
-    Js.Nullable.fromOption(onCommands),
+    Js.Nullable.fromOption(commands),
     () => {
       switch (resetFn, fitToViewFn) {
       | (Some(reset), Some(fitToView)) =>
+        let _ = Js_global.setTimeout(() => fitToView(), 0)
         Some({
           reset: reset,
           fitToView: fitToView,

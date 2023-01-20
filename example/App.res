@@ -127,7 +127,7 @@ module App = {
         orientation
         selectionZoom=true
         boundingBox=true
-        onCommands={diagramCommands}
+        commands={diagramCommands}
         onLayoutUpdate={() => Diagram.fitToView(diagramCommands)}>
         {nodes->renderArray(nodeId =>
           <Diagram.Node
