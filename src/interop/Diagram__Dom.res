@@ -58,6 +58,11 @@ let forFirstChild = (node, fn) => node->firstChild->Js.toOption->Belt.Option.for
 @set external setTextContent: (Dom.element, string) => unit = "textContent"
 @set external setDocument: (Dom.element, Dom.element) => unit = "document"
 
+@get @scope("style") external getStyleWidth: Dom.element => string = "width"
+@get @scope("style") external getStyleHeight: Dom.element => string = "height"
+@set @scope("style") external setStyleDisplay: (Dom.element, string) => unit = "display"
+@set @scope("style") external setStyleWidth: (Dom.element, string) => unit = "width"
+@set @scope("style") external setStyleHeight: (Dom.element, string) => unit = "height"
 @set @scope("style") external setStyleTransform: (Dom.element, string) => unit = "transform"
 
 let setTranslate3d = (node, x, y) =>
@@ -76,9 +81,12 @@ let setTransform = (node, x, y, scale) =>
     Js.Float.toString(scale) ++ ",1)",
   )
 
+@send external stopPropagation: (ReactEvent.Mouse.t, unit) => unit = "stopPropagation"
 @get external mouseEventTarget: ReactEvent.Mouse.t => Dom.element = "target"
 @get external mouseEventButton: ReactEvent.Mouse.t => int = "button"
 @get external mousePointerId: ReactEvent.Mouse.t => string = "pointerId"
 @get external clientX: ReactEvent.Mouse.t => float = "clientX"
 @get external clientY: ReactEvent.Mouse.t => float = "clientY"
+@get external movementX: ReactEvent.Mouse.t => float = "movementX"
+@get external movementY: ReactEvent.Mouse.t => float = "movementY"
 external asMouseEvent: ReactEvent.Wheel.t => ReactEvent.Mouse.t = "%identity"

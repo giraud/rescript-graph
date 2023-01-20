@@ -438,7 +438,6 @@ let reconciler = Diagram__ReactFiberReconciler.make(
         ->Js.toOption
         ->Belt.Option.forEach(canvas => {
           canvas->Dom.setTextContent("")
-          //          if rootContainer->Diagram__Layout.get->Diagram__Layout.displayBBox {
           let element = Diagram__Dom.Document.createElement("div")
           element->setStyles(
             Js.Dict.fromArray([
@@ -459,7 +458,6 @@ let reconciler = Diagram__ReactFiberReconciler.make(
             ]),
           )
           canvas->Diagram__Dom.appendChild(element)
-          //          }
         })
       },
     },

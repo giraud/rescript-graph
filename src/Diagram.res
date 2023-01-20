@@ -90,6 +90,9 @@ let make = (
 ) => {
   let diagramNode = React.useRef(None)
   let canvasNode = React.useRef(None)
+  let selectionEnabled = false // not available yet
+  let clickCoordinates = React.useRef((0., 0., 0., 0.))
+  let rectangleZooming = React.useRef(false)
   let slidingEnabled = React.useRef(false)
 
   React.useEffect1(() => {
@@ -155,22 +158,81 @@ let make = (
     }
   }
 
-  let beginSliding = (. e) =>
-    switch diagramNode.current {
-    | Some(node)
-      if e->Diagram__Dom.mouseEventTarget == node &&
-        e->Diagram__Dom.mouseEventButton == 1 /* middle/wheel */ =>
+  let onPointerDown = (. e) => {
+    let capture = () =>
       e
       ->Diagram__Dom.mouseEventTarget
       ->Diagram__Dom.setPointerCapture(e->Diagram__Dom.mousePointerId)
 
-      node->Diagram__Dom.style->Js.Dict.set("cursor", "move")
-      slidingEnabled.current = true
+    switch diagramNode.current {
+    | Some(containerNode) if e->Diagram__Dom.mouseEventTarget == containerNode =>
+      switch e->Diagram__Dom.mouseEventButton {
+      | 0 /* left */ if selectionEnabled =>
+        capture()
+        rectangleZooming.current = true
+        // find click position in container
+        let targetBBox = e->Diagram__Dom.mouseEventTarget->Diagram__Dom.getBoundingClientRect
+        let px = e->Diagram__Dom.clientX -. targetBBox.left
+        let py = e->Diagram__Dom.clientY -. targetBBox.top
+        clickCoordinates.current = (px, py, 0., 0.)
+
+        let element = Diagram__Dom.Document.createElement("div")
+        element->Diagram__DOMReconciler.setStyles(
+          Js.Dict.fromArray([
+            ("position", Js.Nullable.return("absolute")),
+            ("transformOrigin", Js.Nullable.return("0 0")),
+            ("pointerEvents", Js.Nullable.return("none")),
+            ("outline", Js.Nullable.return("1px dashed yellowgreen")),
+            ("width", Js.Nullable.return("1px")),
+            ("height", Js.Nullable.return("1px")),
+            (
+              "transform",
+              Js.Nullable.return(
+                "translate3d(" ++
+                Js.Float.toString(px) ++
+                "px, " ++
+                Js.Float.toString(py) ++ "px, 0px)",
+              ),
+            ),
+          ]),
+        )
+        diagramNode.current->Belt.Option.forEach(n => n->Diagram__Dom.appendChild(element))
+      | 1 /* middle/wheel */ =>
+        capture()
+        containerNode->Diagram__Dom.style->Js.Dict.set("cursor", "move")
+        slidingEnabled.current = true
+      | _ => ()
+      }
     | _ => ()
     }
+  }
 
   let slide = (. e) =>
-    if slidingEnabled.current {
+    if rectangleZooming.current {
+      let (px, py, w, h) = clickCoordinates.current
+
+      diagramNode.current->Belt.Option.forEach(n =>
+        n
+        ->Diagram__Dom.lastChild
+        ->Js.toOption
+        ->Belt.Option.forEach(l => {
+          let mx = e->Diagram__Dom.movementX
+          let my = e->Diagram__Dom.movementY
+          let w' = w +. mx
+          let h' = h +. my
+          clickCoordinates.current = (px, py, w', h')
+          l->Diagram__Dom.setStyleTransform(
+            "translate3d(" ++
+            Js.Float.toString(Js.Math.min_float(px, px +. w')) ++
+            "px, " ++
+            Js.Float.toString(py) ++ "px, 0px)",
+          )
+          l->Diagram__Dom.setStyleWidth(Js.Float.toString(Js.Math.abs_float(w')) ++ "px")
+          l->Diagram__Dom.setStyleHeight(Js.Float.toString(Js.Math.abs_float(h')) ++ "px")
+        })
+      )
+      e->Diagram__Dom.stopPropagation()
+    } else if slidingEnabled.current {
       switch (diagramNode.current, canvasNode.current) {
       | (Some(container), Some(canvas)) =>
         let transform = container->Diagram__Transform.get
@@ -227,20 +289,48 @@ let make = (
       }
     }
 
-  let stopSliding = (. e) =>
+  let onPointerUp = (. e) => {
+    let release = () =>
+      e
+      ->Diagram__Dom.mouseEventTarget
+      ->Diagram__Dom.releasePointerCapture(e->Diagram__Dom.mousePointerId)
+
     switch diagramNode.current {
-    | Some(node) =>
+    | Some(node) if slidingEnabled.current =>
       slidingEnabled.current = false
       node->Diagram__Dom.style->Js.Dict.set("cursor", "initial")
       node
       ->Diagram__Dom.lastChild
       ->Js.toOption
       ->Belt.Option.forEach(n => n->Diagram__Dom.style->Js.Dict.set("display", "none"))
-      e
-      ->Diagram__Dom.mouseEventTarget
-      ->Diagram__Dom.releasePointerCapture(e->Diagram__Dom.mousePointerId)
-    | None => ()
+      release()
+    | Some(_node) if rectangleZooming.current =>
+      let targetBBox = e->Diagram__Dom.mouseEventTarget->Diagram__Dom.getBoundingClientRect
+      let pointerX = e->Diagram__Dom.clientX -. targetBBox.left
+      let pointerY = e->Diagram__Dom.clientY -. targetBBox.top
+      let (startPointerX, startPointerY, _, _) = clickCoordinates.current
+      let (px, px') =
+        pointerX < startPointerX ? (pointerX, startPointerX) : (startPointerX, pointerX)
+      let (py, py') =
+        pointerY < startPointerY ? (pointerY, startPointerY) : (startPointerY, pointerY)
+      let width = px' -. px
+      let height = py' -. py
+      rectangleZooming.current = false
+      release()
+      diagramNode.current->Belt.Option.forEach(n =>
+        n
+        ->Diagram__Dom.lastChild
+        ->Js.toOption
+        ->Belt.Option.forEach(l => n->Diagram__Dom.removeChild(l))
+      )
+
+      if height != 0. {
+        Js.log3("!zoom rectangle", (px, py), (width, height))
+        Js.log2("!ratio", width /. height) // 0
+      }
+    | _ => ()
     }
+  }
 
   let zoom = e =>
     switch (diagramNode.current, canvasNode.current) {
@@ -250,7 +340,7 @@ let make = (
       let scale = transform->Diagram__Transform.scale
 
       let eMouse = e->Diagram__Dom.asMouseEvent
-      let targetBBox = eMouse->Diagram__Dom.mouseEventTarget->Diagram__Dom.getBoundingClientRect
+      let targetBBox = container->Diagram__Dom.getBoundingClientRect
       let pointerX = eMouse->Diagram__Dom.clientX -. targetBBox.left
       let pointerY = eMouse->Diagram__Dom.clientY -. targetBBox.top
 
@@ -268,7 +358,7 @@ let make = (
     | _ => ()
     }
 
-  <WithPointerEvents onPointerDown=beginSliding onPointerUp=stopSliding onPointerMove=slide>
+  <WithPointerEvents onPointerDown onPointerUp onPointerMove=slide>
     <div
       ref={ReactDOM.Ref.callbackDomRef(initRender)}
       ?className
