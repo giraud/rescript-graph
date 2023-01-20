@@ -43,25 +43,11 @@ module WithPointerEvents = {
   }
 }
 
-module Commands = Diagram__DOMRenderer.Commands
+type commands = {reset: unit => unit, fitToView: unit => unit}
+type refCommands = React.ref<option<commands>>
 
-let useDiagramCommands = () => {
-  let (commands: option<Commands.t>, setCommands) = React.useState(() => None)
-
-  let reset = () =>
-    switch commands {
-    | None => ()
-    | Some(c) => c.reset()
-    }
-
-  let fitToView = () =>
-    switch commands {
-    | None => ()
-    | Some(c) => c.fitToView()
-    }
-
-  (fitToView, reset, c => setCommands(_ => Some(c)))
-}
+let fitToView = (cmd: refCommands) => cmd.current->Belt.Option.forEach(c => c.fitToView())
+let reset = (cmd: refCommands) => cmd.current->Belt.Option.forEach(c => c.reset())
 
 let useOrientation = init => {
   let (orientation, setOrientation) = React.useState(init)
@@ -84,7 +70,7 @@ let make = (
   ~maxScale=1.5,
   ~orientation: Diagram__Layout.orientation=#vertical,
   ~boundingBox=false,
-  ~onCreation=?,
+  ~onCommands: option<React.ref<option<commands>>>=?,
   ~onLayoutUpdate=?,
   ~children,
 ) => {
@@ -94,6 +80,23 @@ let make = (
   let clickCoordinates = React.useRef((0., 0., 0., 0.))
   let rectangleZooming = React.useRef(false)
   let slidingEnabled = React.useRef(false)
+
+  let (fitToViewFn, setFitToViewFn) = React.Uncurried.useState(() => None)
+  let (resetFn, setResetFn) = React.Uncurried.useState(() => None)
+  React.useImperativeHandle2(
+    Js.Nullable.fromOption(onCommands),
+    () => {
+      switch (resetFn, fitToViewFn) {
+      | (Some(reset), Some(fitToView)) =>
+        Some({
+          reset: reset,
+          fitToView: fitToView,
+        })
+      | _ => None
+      }
+    },
+    (fitToViewFn, resetFn),
+  )
 
   React.useEffect1(() => {
     switch diagramNode.current {
@@ -150,9 +153,8 @@ let make = (
         }
         l->Diagram__Layout.setDisplayBBox(boundingBox)
         l->Diagram__Layout.setOrientation(orientation)
-        onCreation->forEach(fn =>
-          fn(Diagram__DOMRenderer.Commands.make(update(true, false), update(true, true)))
-        )
+        setResetFn(._ => Some(update(true, false)))
+        setFitToViewFn(._ => Some(update(true, true)))
       })
     | None => ()
     }

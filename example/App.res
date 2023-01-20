@@ -38,7 +38,7 @@ module App = {
     let (nodes, setNodes) = React.useState(() => initialNodes)
     let (edges, setEdges) = React.useState(() => initialEdges)
 
-    let (fitToView, reset, setCommands) = Diagram.useDiagramCommands()
+    let diagramCommands: Diagram.refCommands = React.useRef(None)
     let (orientation, flip) = Diagram.useOrientation(() => #vertical)
 
     let clear = _e => {
@@ -47,7 +47,7 @@ module App = {
       setEnd(_ => "")
       setNodes(_ => [])
       setEdges(_ => [])
-      reset()
+      Diagram.reset(diagramCommands)
     }
 
     let addNode = _ => {
@@ -113,8 +113,10 @@ module App = {
           {"Remove edge"->React.string}
         </button>
         <button onClick={clear}> {"Clear"->React.string} </button>
-        <button onClick={_ => reset()}> {"Reset"->React.string} </button>
-        <button onClick={_ => fitToView()}> {"Fit to view"->React.string} </button>
+        <button onClick={_ => Diagram.reset(diagramCommands)}> {"Reset"->React.string} </button>
+        <button onClick={_ => Diagram.fitToView(diagramCommands)}>
+          {"Fit to view"->React.string}
+        </button>
         <button onClick={_ => flip()}> {"Flip"->React.string} </button>
         <a href="https://github.com/giraud/rescript-diagram"> {"Github"->React.string} </a>
       </div>
@@ -124,8 +126,8 @@ module App = {
         height="100%"
         orientation
         boundingBox={true}
-        onCreation={setCommands}
-        onLayoutUpdate={fitToView}>
+        onCommands={diagramCommands}
+        onLayoutUpdate={() => Diagram.fitToView(diagramCommands)}>
         {nodes->renderArray(nodeId =>
           <Diagram.Node
             key={nodeId}

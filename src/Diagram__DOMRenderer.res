@@ -3,15 +3,6 @@ module DataNodeReactRoot = {
   @get external detach: Dom.element => Js.nullable<'a> = "_reactRootContainer"
 }
 
-module Commands = {
-  type t = {reset: unit => unit, fitToView: unit => unit}
-
-  let make = (resetFn, fitToViewFn) => {
-    reset: resetFn,
-    fitToView: fitToViewFn,
-  }
-}
-
 let render = (element, container, onCreation) => {
   let root = switch container->DataNodeReactRoot.detach->Js.toOption {
   | Some(node) => node
