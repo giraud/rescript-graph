@@ -70,13 +70,13 @@ let make = (
   ~maxScale=1.5,
   ~orientation: Diagram__Layout.orientation=#vertical,
   ~boundingBox=false,
+  ~selectionZoom=false,
   ~onCommands: option<React.ref<option<commands>>>=?,
   ~onLayoutUpdate=?,
   ~children,
 ) => {
   let diagramNode = React.useRef(None)
   let canvasNode = React.useRef(None)
-  let selectionEnabled = false // not available yet
   let clickCoordinates = React.useRef((0., 0., 0., 0.))
   let rectangleZooming = React.useRef(false)
   let slidingEnabled = React.useRef(false)
@@ -169,13 +169,14 @@ let make = (
     switch diagramNode.current {
     | Some(containerNode) if e->Diagram__Dom.mouseEventTarget == containerNode =>
       switch e->Diagram__Dom.mouseEventButton {
-      | 0 /* left */ if selectionEnabled =>
+      | 0 /* left */ if selectionZoom =>
         capture()
         rectangleZooming.current = true
-        // find click position in container
-        let targetBBox = e->Diagram__Dom.mouseEventTarget->Diagram__Dom.getBoundingClientRect
-        let px = e->Diagram__Dom.clientX -. targetBBox.left
-        let py = e->Diagram__Dom.clientY -. targetBBox.top
+
+        let {left: containerLeft, top: containerTop, _} =
+          containerNode->Diagram__Dom.getBoundingClientRect
+        let px = e->Diagram__Dom.clientX -. containerLeft
+        let py = e->Diagram__Dom.clientY -. containerTop
         clickCoordinates.current = (px, py, 0., 0.)
 
         let element = Diagram__Dom.Document.createElement("div")
@@ -297,8 +298,8 @@ let make = (
       ->Diagram__Dom.mouseEventTarget
       ->Diagram__Dom.releasePointerCapture(e->Diagram__Dom.mousePointerId)
 
-    switch diagramNode.current {
-    | Some(node) if slidingEnabled.current =>
+    switch (diagramNode.current, canvasNode.current) {
+    | (Some(node), _) if slidingEnabled.current =>
       slidingEnabled.current = false
       node->Diagram__Dom.style->Js.Dict.set("cursor", "initial")
       node
@@ -306,17 +307,18 @@ let make = (
       ->Js.toOption
       ->Belt.Option.forEach(n => n->Diagram__Dom.style->Js.Dict.set("display", "none"))
       release()
-    | Some(_node) if rectangleZooming.current =>
-      let targetBBox = e->Diagram__Dom.mouseEventTarget->Diagram__Dom.getBoundingClientRect
-      let pointerX = e->Diagram__Dom.clientX -. targetBBox.left
-      let pointerY = e->Diagram__Dom.clientY -. targetBBox.top
+    | (Some(container), Some(canvas)) if rectangleZooming.current =>
+      let {left: containerLeft, top: containerTop, width: containerWidth, _} =
+        container->Diagram__Dom.getBoundingClientRect
+      let pointerX = e->Diagram__Dom.clientX -. containerLeft
+      let pointerY = e->Diagram__Dom.clientY -. containerTop
       let (startPointerX, startPointerY, _, _) = clickCoordinates.current
       let (px, px') =
         pointerX < startPointerX ? (pointerX, startPointerX) : (startPointerX, pointerX)
       let (py, py') =
         pointerY < startPointerY ? (pointerY, startPointerY) : (startPointerY, pointerY)
-      let width = px' -. px
-      let height = py' -. py
+      let selectionWidth = px' -. px
+      let _selectionHeight = py' -. py
       rectangleZooming.current = false
       release()
       diagramNode.current->Belt.Option.forEach(n =>
@@ -326,10 +328,21 @@ let make = (
         ->Belt.Option.forEach(l => n->Diagram__Dom.removeChild(l))
       )
 
-      if height != 0. {
-        Js.log3("!zoom rectangle", (px, py), (width, height))
-        Js.log2("!ratio", width /. height) // 0
-      }
+      Js.log3("!zoom rectangle", (px, py), (width, height))
+      Js.log2("!selection ratio", selectionWidth /. containerWidth) // 0?
+      let transform = container->Diagram__Transform.get
+      //let (x, y) = transform->Diagram__Transform.origin
+      let scale = transform->Diagram__Transform.scale
+
+      let x' = /* x -. */ px -. startPointerX *. scale
+      let y' = /* y -. */ py -. startPointerY *. scale
+      let scale' = Js.Math.min_float(
+        maxScale,
+        Js.Math.max_float(minScale, scale *. containerWidth /. selectionWidth),
+      )
+
+      transform->Diagram__Transform.update((x', y'), scale')
+      canvas->Diagram__Dom.setTransform(x', y', scale')
     | _ => ()
     }
   }
