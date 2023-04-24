@@ -11,6 +11,7 @@ external noDebugMethods: (
   array<string>,
 ) => Diagram__ReactFiberReconciler.hostConfig<'b, 'c> = "noDebugMethods"
 
+external jsPropToBool: Diagram__ReactFiberReconciler.jsProp => bool = "%identity"
 external jsPropToString: Diagram__ReactFiberReconciler.jsProp => string = "%identity"
 external jsPropToLabelPos: Diagram__ReactFiberReconciler.jsProp => Diagram__Layout.labelPos =
   "%identity"
@@ -272,7 +273,14 @@ let reconciler = Diagram__ReactFiberReconciler.make(
           | (_, name /* , value */) if isEventName(name) =>
             let eventName = name->Js.String2.toLowerCase->Js.String2.replace("on", "")
             domElement->Dom.addEventListener(eventName, props->Js.Dict.unsafeGet(name))
-          | (_, name /* , value */) =>
+          | (_, name) if name == "disabled" =>
+            let value = props->Js.Dict.get(name)->Belt.Option.mapWithDefault(false, jsPropToBool)
+            if value == true {
+              domElement->Dom.setAttribute(name, "")
+            } else {
+              domElement->Dom.removeAttribute(name)
+            }
+          | (_, name) =>
             domElement->Dom.setAttribute(name, props->Js.Dict.unsafeGet(name)->jsPropToString)
           }
         })
