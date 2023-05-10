@@ -19,7 +19,7 @@ let reset: t => unit
 let registerListener: (t, unit => unit) => unit
 let onUpdate: t => unit
 
-let make: unit => t
+let make: (~nodeSep: int, ~edgeSep: int, ~rankSep: int) => t
 
 @set external attach: (Dom.element, t) => unit = "layout"
 @get external get: Dom.element => t = "layout"

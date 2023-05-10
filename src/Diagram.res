@@ -63,18 +63,23 @@ let useOrientation = init => {
 
 @react.component
 let make = (
-  ~width,
-  ~height,
+  ~width=?,
+  ~height=?,
   ~className=?,
   ~minScale=0.1,
   ~maxScale=1.5,
   ~orientation: Diagram__Layout.orientation=#vertical,
   ~boundingBox=false,
   ~selectionZoom=false,
+  ~nodeSep=50,
+  ~edgeSep=10,
+  ~rankSep=50,
   ~commands: option<React.ref<option<commands>>>=?,
   ~onLayoutUpdate=?,
   ~children,
 ) => {
+  let zoomable = !(minScale == maxScale && width == None && height == None)
+
   let diagramNode = React.useRef(None)
   let canvasNode = React.useRef(None)
   let clickCoordinates = React.useRef((0., 0., 0., 0.))
@@ -83,6 +88,8 @@ let make = (
 
   let (fitToViewFn, setFitToViewFn) = React.Uncurried.useState(() => None)
   let (resetFn, setResetFn) = React.Uncurried.useState(() => None)
+  let (resizeFn, setResizeFn) = React.Uncurried.useState(() => None)
+
   React.useImperativeHandle2(
     Js.Nullable.fromOption(commands),
     () => {
@@ -121,41 +128,55 @@ let make = (
     | Some(container) =>
       open Belt.Option
       canvasNode.current = container->Diagram__Dom.firstChild->Js.toOption
-      Diagram__DOMRenderer.render(children, container, (t, l) => {
-        let update = (changeScale, center, ()) => {
-          // compute center
-          let (x, y, scale) = if center {
+      Diagram__DOMRenderer.render(children, container, nodeSep, edgeSep, rankSep, (t, l) => {
+        let update = (changeScale, center, resize, ()) => {
+          if resize {
             let (canvasWidth, canvasHeight) = t->Diagram__Transform.getBBox
-            if canvasWidth > 0. && canvasHeight > 0. {
-              let {width: containerWidth, height: containerHeight} =
-                container->Diagram__Dom.getBoundingClientRect
-              // change scale if wanted
-              let scale = if changeScale {
-                let realScale =
-                  0.98 /.
-                  Js.Math.max_float(canvasWidth /. containerWidth, canvasHeight /. containerHeight)
-                Js.Math.min_float(1.0, Js.Math.max_float(minScale, realScale))
-              } else {
-                t->Diagram__Transform.scale
-              }
+            container
+            ->Diagram__Dom.style
+            ->Js.Dict.set("width", Js.Float.toString(canvasWidth) ++ "px")
+            container
+            ->Diagram__Dom.style
+            ->Js.Dict.set("height", Js.Float.toString(canvasHeight) ++ "px")
+          } else {
+            let (canvasWidth, canvasHeight) = t->Diagram__Transform.getBBox
+            // compute center
+            let (x, y, scale) = if center {
+              if canvasWidth > 0. && canvasHeight > 0. {
+                let {width: containerWidth, height: containerHeight} =
+                  container->Diagram__Dom.getBoundingClientRect
+                // change scale if wanted
+                let scale = if changeScale {
+                  let realScale =
+                    0.98 /.
+                    Js.Math.max_float(
+                      canvasWidth /. containerWidth,
+                      canvasHeight /. containerHeight,
+                    )
+                  Js.Math.min_float(1.0, Js.Math.max_float(minScale, realScale))
+                } else {
+                  t->Diagram__Transform.scale
+                }
 
-              let x = containerWidth /. 2. -. scale *. (canvasWidth /. 2.)
-              let y = containerHeight /. 2. -. scale *. (canvasHeight /. 2.)
-              (x, y, scale)
+                let x = containerWidth /. 2. -. scale *. (canvasWidth /. 2.)
+                let y = containerHeight /. 2. -. scale *. (canvasHeight /. 2.)
+                (x, y, scale)
+              } else {
+                (0., 0., 1.)
+              }
             } else {
               (0., 0., 1.)
             }
-          } else {
-            (0., 0., 1.)
-          }
 
-          t->Diagram__Transform.update((x, y), scale)
-          canvasNode.current->forEach(canvas => canvas->Diagram__Dom.setTransform(x, y, scale))
+            t->Diagram__Transform.update((x, y), scale)
+            canvasNode.current->forEach(canvas => canvas->Diagram__Dom.setTransform(x, y, scale))
+          }
         }
         l->Diagram__Layout.setDisplayBBox(boundingBox)
         l->Diagram__Layout.setOrientation(orientation)
-        setResetFn(._ => Some(update(true, false)))
-        setFitToViewFn(._ => Some(update(true, true)))
+        setResetFn(._ => Some(update(true, false, false)))
+        setFitToViewFn(._ => Some(update(true, true, false)))
+        setResizeFn(._ => Some(update(false, false, true)))
       })
     | None => ()
     }
@@ -200,8 +221,8 @@ let make = (
             ),
           ]),
         )
-        diagramNode.current->Belt.Option.forEach(n => n->Diagram__Dom.appendChild(element))
-      | 1 /* middle/wheel */ =>
+        containerNode->Diagram__Dom.appendChild(element)
+      | 1 /* middle/wheel */ if zoomable =>
         capture()
         containerNode->Diagram__Dom.style->Js.Dict.set("cursor", "move")
         slidingEnabled.current = true
@@ -329,8 +350,6 @@ let make = (
         ->Belt.Option.forEach(l => n->Diagram__Dom.removeChild(l))
       )
 
-      Js.log3("!zoom rectangle", (px, py), (width, height))
-      Js.log2("!selection ratio", selectionWidth /. containerWidth) // 0?
       let transform = container->Diagram__Transform.get
       //let (x, y) = transform->Diagram__Transform.origin
       let scale = transform->Diagram__Transform.scale
@@ -351,35 +370,57 @@ let make = (
   let zoom = e =>
     switch (diagramNode.current, canvasNode.current) {
     | (Some(container), Some(canvas)) =>
-      let transform = container->Diagram__Transform.get
-      let (x, y) = transform->Diagram__Transform.origin
-      let scale = transform->Diagram__Transform.scale
-
       let eMouse = e->Diagram__Dom.asMouseEvent
-      let targetBBox = container->Diagram__Dom.getBoundingClientRect
-      let pointerX = eMouse->Diagram__Dom.clientX -. targetBBox.left
-      let pointerY = eMouse->Diagram__Dom.clientY -. targetBBox.top
+      if eMouse->ReactEvent.Mouse.ctrlKey {
+        eMouse->Diagram__Dom.stopPropagation()
+        eMouse->Diagram__Dom.preventDefault()
 
-      let x' = (pointerX -. x) /. scale
-      let y' = (pointerY -. y) /. scale
+        let transform = container->Diagram__Transform.get
+        let (x, y) = transform->Diagram__Transform.origin
+        let scale = transform->Diagram__Transform.scale
 
-      let scale' = scale +. e->ReactEvent.Wheel.deltaY *. -0.0005 *. scale
-      let scale'' = Js.Math.min_float(maxScale, Js.Math.max_float(minScale, scale'))
+        let targetBBox = container->Diagram__Dom.getBoundingClientRect
+        let pointerX = eMouse->Diagram__Dom.clientX -. targetBBox.left
+        let pointerY = eMouse->Diagram__Dom.clientY -. targetBBox.top
 
-      let x'' = pointerX -. x' *. scale''
-      let y'' = pointerY -. y' *. scale''
+        let x' = (pointerX -. x) /. scale
+        let y' = (pointerY -. y) /. scale
 
-      transform->Diagram__Transform.update((x'', y''), scale'')
-      canvas->Diagram__Dom.setTransform(x'', y'', scale'')
+        let scale' = scale +. e->ReactEvent.Wheel.deltaY *. -0.0005 *. scale
+        let scale'' = Js.Math.min_float(maxScale, Js.Math.max_float(minScale, scale'))
+
+        let x'' = pointerX -. x' *. scale''
+        let y'' = pointerY -. y' *. scale''
+
+        transform->Diagram__Transform.update((x'', y''), scale'')
+        canvas->Diagram__Dom.setTransform(x'', y'', scale'')
+      }
     | _ => ()
     }
+
+  React.useEffect2(() => {
+    switch diagramNode.current {
+    | Some(container) if zoomable =>
+      container->Diagram__Dom.addEventListenerWithOptions(
+        "wheel",
+        zoom,
+        {"capture": false, "once": false, "passive": false},
+      )
+      Some(() => container->Diagram__Dom.removeEventListener("wheel", zoom))
+    | _ => None
+    }
+  }, (zoom, zoomable))
+
+  switch resizeFn {
+  | Some(resize) if !zoomable => Js_global.setTimeout(resize, 0)->ignore
+  | _ => ()
+  }
 
   <WithPointerEvents onPointerDown onPointerUp onPointerMove=slide>
     <div
       ref={ReactDOM.Ref.callbackDomRef(initRender)}
       ?className
-      style={ReactDOM.Style.make(~width, ~height, ~position="relative", ~overflow="hidden", ())}
-      onWheel={zoom}>
+      style={ReactDOM.Style.make(~width?, ~height?, ~position="relative", ~overflow="hidden", ())}>
       <div style={ReactDOM.Style.make(~position="relative", ~transformOrigin="0 0", ())} />
       <svg
         xmlns="http://www.w3.org/2000/svg"

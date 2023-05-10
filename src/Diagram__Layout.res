@@ -6,6 +6,9 @@ type t = {
   listener: ref<unit => unit>,
   displayBBox: ref<bool>,
   orientation: ref<orientation>,
+  nodeSep: ref<int>,
+  edgeSep: ref<int>,
+  rankSep: ref<int>,
 }
 
 let displayBBox = layout => layout.displayBBox.contents
@@ -174,7 +177,12 @@ let run = (layout, container) => {
 let reset = layout => {
   let engine = Diagram__Dagre.make({"multigraph": true})
   engine->Diagram__Dagre.setGraph(
-    Js.Dict.fromArray([("rankdir", layout.orientation.contents->orientationToString)]),
+    Js.Dict.fromArray([
+      ("nodesep", Js.Int.toString(layout.nodeSep.contents)),
+      ("edgesep", Js.Int.toString(layout.edgeSep.contents)),
+      ("ranksep", Js.Int.toString(layout.rankSep.contents)),
+      ("rankdir", layout.orientation.contents->orientationToString),
+    ]),
   )
   engine->Diagram__Dagre.setDefaultEdgeLabel(_ => Js.Obj.empty())
 
@@ -182,11 +190,21 @@ let reset = layout => {
 }
 
 let registerListener = (layout, listener) => layout.listener.contents = listener
-let onUpdate = layout => layout.listener.contents()
 
-let make = () => {
+let onUpdate = layout => {
+  layout.listener.contents()
+}
+
+let make = (~nodeSep, ~edgeSep, ~rankSep) => {
   let engine = Diagram__Dagre.make({"multigraph": true})
-  engine->Diagram__Dagre.setGraph(Js.Dict.fromArray([("rankdir", "TB")]))
+  let options = Js.Dict.fromArray([
+    ("nodesep", Js.Int.toString(nodeSep)),
+    ("edgesep", Js.Int.toString(edgeSep)),
+    ("ranksep", Js.Int.toString(rankSep)),
+    ("rankdir", "TB"),
+  ])
+
+  engine->Diagram__Dagre.setGraph(options)
   engine->Diagram__Dagre.setDefaultEdgeLabel(_ => Js.Obj.empty())
 
   {
@@ -194,6 +212,9 @@ let make = () => {
     listener: ref(() => ()),
     displayBBox: ref(false),
     orientation: ref(#vertical),
+    nodeSep: ref(nodeSep),
+    edgeSep: ref(edgeSep),
+    rankSep: ref(rankSep),
   }
 }
 
