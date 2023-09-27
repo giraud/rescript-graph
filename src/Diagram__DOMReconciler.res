@@ -187,7 +187,9 @@ let reconciler = Diagram__ReactFiberReconciler.make(
           let id =
             props->Js.Dict.get("source")->Belt.Option.mapWithDefault("source", jsPropToString) ++
             "-" ++
-            props->Js.Dict.get("target")->Belt.Option.mapWithDefault("target", jsPropToString)
+            props->Js.Dict.get("target")->Belt.Option.mapWithDefault("target", jsPropToString) ++
+            "-" ++
+            props->Js.Dict.get("label")->Belt.Option.mapWithDefault("label", jsPropToString)
           createEdge(
             id,
             props->Js.Dict.get("label")->Belt.Option.mapWithDefault("", jsPropToString),
@@ -374,6 +376,7 @@ let reconciler = Diagram__ReactFiberReconciler.make(
               ->Diagram__Layout.setEdge(
                 source,
                 target,
+                newProps->Js.Dict.get("label")->Belt.Option.map(jsPropToString),
                 rect.width /. scale,
                 rect.height /. scale,
                 labelPos,
@@ -426,7 +429,14 @@ let reconciler = Diagram__ReactFiberReconciler.make(
             | (Some(source), Some(target), labelPos, Some(domEdgeLabel)) =>
               let rect = Dom.getBoundingClientRect(domEdgeLabel)
               let scale = container->Diagram__Transform.get->Diagram__Transform.scale
-              layout->setEdge(source, target, rect.width /. scale, rect.height /. scale, labelPos)
+              layout->setEdge(
+                source,
+                target,
+                props->Js.Dict.get("label")->Belt.Option.map(jsPropToString),
+                rect.width /. scale,
+                rect.height /. scale,
+                labelPos,
+              )
             | _ => ()
             }
           | _ => ()
