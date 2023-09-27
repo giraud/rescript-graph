@@ -31,7 +31,7 @@ let setNode = (layout, id, width, height) =>
     },
   )
 
-let setEdge = (layout, source, target, width, height, labelPos) =>
+let setEdge = (layout, source, target, label, width, height, labelPos) =>
   layout.engine.contents->Diagram__Dagre.setEdge(
     source,
     target,
@@ -48,7 +48,7 @@ let setEdge = (layout, source, target, width, height, labelPos) =>
       | _ => 0.
       },
     },
-    "name-" ++ source ++ "-" ++ target,
+    label->Belt.Option.getWithDefault("name-" ++ source ++ "-" ++ target),
   )
 
 let processNodes = (layout, fn) =>
@@ -65,7 +65,7 @@ let processEdges = (layout, fn) =>
   layout.engine.contents
   ->Diagram__Dagre.edges
   ->Belt.Array.forEach(edge => {
-    let id = edge.v ++ "-" ++ edge.w
+    let id = edge.v ++ "-" ++ edge.w ++ "-" ++ edge.name
     switch layout.engine.contents
     ->Diagram__Dagre.namedEdge(edge.v, edge.w, edge.name)
     ->Js.toOption {
