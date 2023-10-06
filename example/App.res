@@ -6,7 +6,7 @@ external getElementById: string => Js.nullable<Dom.element> = "getElementById"
 let sample_one = "1"
 let sample1 = "1|2|3||1-2|1-3"
 let sample2 = "1|2|3|4|5|6|7||1-2|1-3|1-5|2-3|2-7|4-1|6-6"
-let sample3 = "B|C|D||B-C:BtoC|B-C:BtoC_2|B-C:More_BtoC|C-B:CtoB|C-D:CtoD|D-C:DtoC|B-D:A very very long name to see if layout is correctly updated"
+let sample3 = "B|C|D||B-C:BtoC|B-C:BtoC_2|B-C:More_BtoC|B-C|C-B:CtoB|C-D:CtoD|D-C:DtoC|B-D:A very very long name to see if layout is correctly updated"
 
 let parse = instructions => {
   instructions
@@ -143,9 +143,7 @@ module App = {
             key={source ++ "-" ++ target ++ "-" ++ label}
             source
             target
-            label={label->Js.String2.length == 0
-              ? "edge from " ++ source ++ " to " ++ target
-              : label}
+            label=?{label->Js.String2.length == 0 ? None : Some(label)}
             onClick={_ => selectNodes(source, target)}
           />
         )}

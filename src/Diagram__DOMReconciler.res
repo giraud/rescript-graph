@@ -184,12 +184,15 @@ let reconciler = Diagram__ReactFiberReconciler.make(
           )
         | "Edge" =>
           rootContainer->setDataSetLayoutUpdated("true")
-          let id =
-            props->Js.Dict.get("source")->Belt.Option.mapWithDefault("source", jsPropToString) ++
-            "-" ++
-            props->Js.Dict.get("target")->Belt.Option.mapWithDefault("target", jsPropToString) ++
-            "-" ++
-            props->Js.Dict.get("label")->Belt.Option.mapWithDefault("label", jsPropToString)
+          let source =
+            props->Js.Dict.get("source")->Belt.Option.mapWithDefault("source", jsPropToString)
+          let target =
+            props->Js.Dict.get("target")->Belt.Option.mapWithDefault("target", jsPropToString)
+          let label =
+            props
+            ->Js.Dict.get("label")
+            ->Belt.Option.mapWithDefault("name-" ++ source ++ "-" ++ target, jsPropToString)
+          let id = source ++ "-" ++ target ++ "-" ++ label
           createEdge(
             id,
             props->Js.Dict.get("label")->Belt.Option.mapWithDefault("", jsPropToString),
