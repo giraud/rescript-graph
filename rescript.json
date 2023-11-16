@@ -6,12 +6,13 @@
             "type": "dev"
         }],
     "package-specs": {
-        "module": "es6-global",
+        "module": "esmodule",
         "in-source": false
     },
     "suffix": ".bs.js",
-    "reason": {
-        "react-jsx": 3
+    "jsx": {
+        "version": 4,
+        "mode": "automatic"
     },
     "bs-dependencies": [
         "@rescript/react"

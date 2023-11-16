@@ -157,6 +157,13 @@ module App = {
 }
 
 switch getElementById("root")->Js.toOption {
-| Some(root) => ReactDOM.render(<React.StrictMode> <App /> </React.StrictMode>, root)
+| Some(rootElement) =>
+  let root = ReactDOM.Client.createRoot(rootElement)
+  ReactDOM.Client.Root.render(
+    root,
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>,
+  )
 | None => ()
 }
