@@ -9,9 +9,10 @@
         "module": "es6-global",
         "in-source": false
     },
-    "suffix": ".bs.js",
-    "reason": {
-        "react-jsx": 3
+    "suffix": ".js",
+    "jsx": {
+        "version": 4,
+        "mode": "automatic"
     },
     "bs-dependencies": [
         "@rescript/react"
