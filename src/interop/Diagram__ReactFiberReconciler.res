@@ -144,6 +144,10 @@ type hostConfig<'c, 'commit> = {
    than the rest of the tree.
  */
   removeChildFromContainer: (Dom.element, Dom.element) => unit,
+  /*
+  no info
+ */
+  detachDeletedInstance: Dom.element => unit,
   /**
    This method is only called if you returned true from finalizeInitialChildren for this instance.
 

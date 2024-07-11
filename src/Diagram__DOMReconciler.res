@@ -168,6 +168,7 @@ let reconciler = Diagram__ReactFiberReconciler.make(
       },
       resetAfterCommit: container => {
         let layoutUpdated = container->getDataSetLayoutUpdated
+
         // Callback onLayoutUpdate
         if layoutUpdated == "true" {
           container->Diagram__Layout.get->Diagram__Layout.onUpdate
@@ -237,6 +238,8 @@ let reconciler = Diagram__ReactFiberReconciler.make(
           rootContainer->Dom.forFirstChild(canvas => canvas->Dom.removeChild(child))
         | Some(_) => rootContainer->Dom.removeChild(child)
         },
+      //
+      detachDeletedInstance: _node => (),
       //
       insertBefore: (parentInstance, child, beforeChild) =>
         parentInstance->Dom.insertBefore(child, beforeChild),
